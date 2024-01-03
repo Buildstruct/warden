@@ -528,22 +528,35 @@ if SERVER then
 			if not ent or ent:IsWorld() then return end
 			if not ent:IsPlayer() and Warden.GetOwner(ent) == game.GetWorld() then return end
 
+
 			local attacker = dmg:GetAttacker()
 			local inflictor = dmg:GetInflictor()
 			local owner = Warden.GetOwner(inflictor)
+			local entOwner = Warden.GetOwner(ent) 
 
-			if attacker:IsPlayer() then
-				local bothInKillstruct = (ent:IsPlayer() and (ent:GetNWBool("BS_KillStruct") and attacker:GetNWBool("BS_KillStruct")))
-				if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then
+			if (ent:IsVehicle()) then -- Ignored damage types
+				return 
+			elseif IsValid(attacker) and attacker:IsPlayer() and ent:IsPlayer() then  -- Damage between players and players
+				local bothInKillstruct = ent:IsPlayer() and ent:GetNWBool("BS_KillStruct") and attacker:GetNWBool("BS_KillStruct")
+				if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then 
+					return true
+				end 	-- Check if they're both in killstruct mode, or has permission.
+			elseif IsValid(attacker) and attacker:IsPlayer() and IsValid(entOwner) and entOwner:IsPlayer() then  -- Damage between players and props
+				local bothInKillstruct = entOwner:IsPlayer() and entOwner:GetNWBool("BS_KillStruct") and attacker:GetNWBool("BS_KillStruct")
+				if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then 
+					return true
+				end 	-- Check if they're both in killstruct mode, or has permission.
+			elseif ent:IsPlayer() and attacker:IsWorld() or not IsValid(attacker) then   -- Prevent crush damage / damage from the world 
+				return true 
+			elseif IsValid(owner) and owner:IsPlayer() then -- Damage between unknown attackers and their owners
+				local bothInKillstruct = IsValid(owner) and ent:IsPlayer() and ent:GetNWBool("BS_KillStruct") and owner:GetNWBool("BS_KillStruct")
+				if (not Warden.CheckPermission(owner, ent, Warden.PERMISSION_DAMAGE)) or bothInKillstruct then
 					return true
 				end
-			elseif ent:IsPlayer() and attacker:IsWorld() then 
-				return true
-			elseif inflictor:IsValid() then
-				if not (owner and owner:IsPlayer() and Warden.CheckPermission(owner, ent, Warden.PERMISSION_DAMAGE)) then
-					return true
-				end
-			end
+			elseif (not IsValid(attacker) or not IsValid(owner)) and owner!=game.GetWorld() then 
+				return true 
+			end 
+
 		-- return true -- do NOT return true unless you're the gamemode. You'll break other hooks
 	end)
 
