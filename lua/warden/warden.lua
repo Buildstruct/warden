@@ -550,7 +550,7 @@ if SERVER then
 				return true 
 			elseif IsValid(owner) and owner:IsPlayer() then -- Damage between unknown attackers and their owners
 				local bothInKillstruct = IsValid(owner) and ent:IsPlayer() and ent:GetNWBool("BS_KillStruct") and owner:GetNWBool("BS_KillStruct")
-				if (not Warden.CheckPermission(owner, ent, Warden.PERMISSION_DAMAGE)) or bothInKillstruct then
+				if (not Warden.CheckPermission(owner, ent, Warden.PERMISSION_DAMAGE)) and not bothInKillstruct then
 					return true
 				end
 			elseif (not IsValid(attacker) or not IsValid(owner)) and owner!=game.GetWorld() then 
