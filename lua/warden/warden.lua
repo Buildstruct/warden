@@ -360,7 +360,9 @@ if SERVER then
 			end
 			count = count + 1
 		end
+
 		hook.Run("WardenCleanup", steamid, count)
+		return count
 	end
 
 	function Warden.FreezeDisconnected()
@@ -599,8 +601,8 @@ if SERVER then
 			local time = GetConVar("warden_cleanup_time"):GetInt()
 			local name = data.name
 			timer.Create("WardenCleanup#" .. steamid, time, 1, function()
-				Warden.CleanupEntities(steamid)
-				hook.Run("WardenNaturalCleanup", name, time)
+				local count = Warden.CleanupEntities(steamid)
+				hook.Run("WardenNaturalCleanup", name, time, steamid, count)
 			end)
 		end
 	end)
