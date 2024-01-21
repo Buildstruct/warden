@@ -82,6 +82,10 @@ if SERVER then
 	entMeta.CPPIDrive = entMeta.CPPICanUse
 
 	function entMeta:CPPICanDamage(ply)
+		local bothInKillstruct = self:IsPlayer() and self:GetNWBool("BS_KillStruct") and self:GetNWBool("BS_KillStruct")
+		if (bothInKillstruct) then 
+			return true 
+		end
 		return Warden.CheckPermission(ply, self, Warden.PERMISSION_DAMAGE)
 	end
 end
