@@ -238,10 +238,23 @@ if SERVER then
 		ent:SetNWEntity("OwnerEnt", world)
 	end
 
+	local function getInternalOwner(ent)
+		local owner = ent:GetInternalVariable("m_hOwnerEntity") or NULL
+		if owner == NULL then owner = ent:GetInternalVariable("m_hOwner") or NULL end
+		if owner == NULL then return false end
+		if not owner:IsPlayer() then owner = Warden.GetOwner(owner) end
+		return owner
+	end
+
 	hook.Add("OnEntityCreated", "Warden", function(ent)
 		timer.Simple(0, function()
 			if ent:IsValid() and not Warden.GetOwner(ent) then
-				Warden.SetOwnerWorld(ent)
+				local owner = getInternalOwner(ent)
+				if owner then
+					Warden.SetOwner(ent, owner)
+				else
+					Warden.SetOwnerWorld(ent)
+				end
 			end
 		end)
 	end)
