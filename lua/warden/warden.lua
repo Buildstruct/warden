@@ -476,8 +476,8 @@ if SERVER then
 		if not IsValid(ply) then return false end
 
 		if ent:IsWorld() then return true end
-		if (not Warden.CheckPermission(ply, ent, Warden.PERMISSION_TOOL)) then 
-			return false 
+		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_TOOL) then
+			return false
 		end
 	end)
 
@@ -485,8 +485,8 @@ if SERVER then
 		if not ent or ent:IsWorld() then return false end
 		if not IsValid(ply) then return false end
 
-		if (not Warden.CheckPermission(ply, ent, Warden.PERMISSION_PHYSGUN)) then 
-			return false 
+		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_PHYSGUN) then
+			return false
 		end
 	end)
 
@@ -497,8 +497,8 @@ if SERVER then
 		local owner = Warden.GetOwner(ent)
 		if owner and owner:IsWorld() then return true end
 
-		if (not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN)) then 
-			return false 
+		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN) then
+			return false
 		end
 	end)
 
@@ -509,8 +509,8 @@ if SERVER then
 		local owner = Warden.GetOwner(ent)
 		if owner and owner:IsWorld() then return true end
 
-		if (not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN)) then 
-			return false 
+		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN) then
+			return false
 		end
 	end)
 
@@ -521,8 +521,8 @@ if SERVER then
 		local owner = Warden.GetOwner(ent)
 		if owner and owner:IsWorld() then return true end
 
-		if (not Warden.CheckPermission(ply, ent, Warden.PERMISSION_USE)) then 
-			return false 
+		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_USE) then
+			return false
 		end
 	end)
 
@@ -534,30 +534,30 @@ if SERVER then
 			local attacker = dmg:GetAttacker()
 			local inflictor = dmg:GetInflictor()
 			local owner = Warden.GetOwner(inflictor)
-			local entOwner = Warden.GetOwner(ent) 
+			local entOwner = Warden.GetOwner(ent)
 
-			if (ent:IsVehicle()) then -- Ignored damage types
-				return 
-			elseif IsValid(attacker) and attacker:IsPlayer() and ent:IsPlayer() then  -- Damage between players and players
+			if ent:IsVehicle() then -- Ignored damage types
+				return
+			elseif IsValid(attacker) and attacker:IsPlayer() and ent:IsPlayer() then -- Damage between players and players
 				local bothInKillstruct = ent:IsPlayer() and ent:GetNWBool("BS_KillStruct") and attacker:GetNWBool("BS_KillStruct")
-				if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then 
+				if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then
 					return true
-				end 	-- Check if they're both in killstruct mode, or has permission.
+				end -- Check if they're both in killstruct mode, or has permission.
 			elseif IsValid(attacker) and attacker:IsPlayer() and IsValid(entOwner) and entOwner:IsPlayer() then  -- Damage between players and props
 				local bothInKillstruct = entOwner:IsPlayer() and entOwner:GetNWBool("BS_KillStruct") and attacker:GetNWBool("BS_KillStruct")
-				if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then 
+				if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then
 					return true
-				end 	-- Check if they're both in killstruct mode, or has permission.
-			elseif ent:IsPlayer() and attacker:IsWorld() or not IsValid(attacker) then   -- Prevent crush damage / damage from the world 
-				return true 
+				end -- Check if they're both in killstruct mode, or has permission.
+			elseif ent:IsPlayer() and attacker:IsWorld() or not IsValid(attacker) then -- Prevent crush damage / damage from the world 
+				return true
 			elseif IsValid(owner) and owner:IsPlayer() then -- Damage between unknown attackers and their owners
 				local bothInKillstruct = IsValid(owner) and ent:IsPlayer() and ent:GetNWBool("BS_KillStruct") and owner:GetNWBool("BS_KillStruct")
-				if (not Warden.CheckPermission(owner, ent, Warden.PERMISSION_DAMAGE)) and not bothInKillstruct then
+				if not Warden.CheckPermission(owner, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then
 					return true
 				end
-			elseif (not IsValid(attacker) or not IsValid(owner)) and owner!=game.GetWorld() then 
-				return true 
-			end 
+			elseif (not IsValid(attacker) or not IsValid(owner)) and owner ~= game.GetWorld() then
+				return true
+			end
 
 		-- return true -- do NOT return true unless you're the gamemode. You'll break other hooks
 	end)
@@ -566,8 +566,8 @@ if SERVER then
 		if not ent or ent:IsWorld() then return false end
 		if not IsValid(ply) then return false end
 
-		if (not Warden.CheckPermission(ply, ent, Warden.PERMISSION_TOOL)) then 
-			return false 
+		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_TOOL) then
+			return false
 		end
 	end)
 
@@ -575,9 +575,9 @@ if SERVER then
 		if not ent or ent:IsWorld() then return false end
 		if not IsValid(ply) then return false end
 
-		if (not Warden.CheckPermission(ply, ent, Warden.PERMISSION_TOOL)) then 
+		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_TOOL) then
 			return false
-		end 
+		end
 	end)
 
 	hook.Add("OnPhysgunReload", "Warden", function(wep, ply)
