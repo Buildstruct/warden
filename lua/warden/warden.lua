@@ -508,7 +508,7 @@ if SERVER then
 		if not IsValid(ply) then return false end
 
 		local owner = Warden.GetOwner(ent)
-		if owner and owner:IsWorld() then return true end
+		if owner and owner:IsWorld() then return end
 
 		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN) then
 			return false
@@ -520,7 +520,7 @@ if SERVER then
 		if not IsValid(ply) then return false end
 
 		local owner = Warden.GetOwner(ent)
-		if owner and owner:IsWorld() then return true end
+		if owner and owner:IsWorld() then return  end
 
 		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN) then
 			return false
@@ -532,7 +532,7 @@ if SERVER then
 		if not IsValid(ply) then return false end
 
 		local owner = Warden.GetOwner(ent)
-		if owner and owner:IsWorld() then return true end
+		if owner and owner:IsWorld() then return end
 
 		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_USE) then
 			return false
