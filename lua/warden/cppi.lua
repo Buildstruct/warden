@@ -59,7 +59,7 @@ if SERVER then
 		return CPPI.CPPI_NOTIMPLEMENTED
 	end
 
-	function entMeta:CPPICanTool(ply...)
+	function entMeta:CPPICanTool(ply,...)
 		hook.Call("CPPICanTool",self,ply,...)
 		return Warden.CheckPermission(ply, self, Warden.PERMISSION_TOOL)
 	end
