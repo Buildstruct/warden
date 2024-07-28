@@ -51,7 +51,7 @@ if SERVER then
 		if ply then
 			return Warden.SetOwner(self, ply)
 		else
-			return Warden.ClearOwner(self)	
+			return Warden.ClearOwner(self)
 		end
 	end
 
@@ -83,9 +83,10 @@ if SERVER then
 
 	function entMeta:CPPICanDamage(ply)
 		local bothInKillstruct = self:IsPlayer() and self:GetNWBool("BS_KillStruct") and self:GetNWBool("BS_KillStruct")
-		if (bothInKillstruct) then 
-			return true 
+		if (bothInKillstruct) then
+			return true
 		end
+
 		return Warden.CheckPermission(ply, self, Warden.PERMISSION_DAMAGE)
 	end
 end

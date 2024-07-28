@@ -192,6 +192,16 @@ if SERVER then
 		ent:SetNWEntity("OwnerEnt", ply)
 	end
 
+	function Warden.ReplaceOwner(from, to)
+		if not IsValid(from) or from:IsPlayer() then return end
+		if not IsValid(to) or to:IsPlayer() then return end
+
+		local id = Warden.Ownership[from:EntIndex()]
+		if not id then return end -- is ownerless
+
+		Warden.SetOwner(to, id.owner)
+	end
+
 	function Warden.ClearOwner(ent)
 		local index = ent:EntIndex()
 		local ownership = Warden.Ownership[index]
@@ -419,20 +429,103 @@ if SERVER then
 		return ents
 	end
 
-	-- Assigning spawned props to their owners
+	-- Detours
 	local plyMeta = FindMetaTable("Player")
+
 	if plyMeta.AddCount then
-		local backupPlyAddCount = plyMeta.AddCount
+		Warden.BackupPlyAddCount = Warden.BackupPlyAddCount or plyMeta.AddCount
 		function plyMeta:AddCount(enttype, ent)
 			Warden.SetOwner(ent, self)
-			backupPlyAddCount(self, enttype, ent)
+			Warden.BackupPlyAddCount(self, enttype, ent)
 		end
 	end
+
 	if plyMeta.AddCleanup then
-		local backupPlyAddCleanup = plyMeta.AddCleanup
+		Warden.BackupPlyAddCleanup = Warden.BackupPlyAddCleanup or plyMeta.AddCleanup
 		function plyMeta:AddCleanup(enttype, ent)
 			Warden.SetOwner(ent, self)
-			backupPlyAddCleanup(self, enttype, ent)
+			Warden.BackupPlyAddCleanup(self, enttype, ent)
+		end
+	end
+
+	if cleanup then
+		Warden.BackupCleanupAdd = Warden.BackupCleanupAdd or cleanup.Add
+		function cleanup.Add(ply, enttype, ent)
+			if IsValid(ent) then
+				Warden.SetOwner(ent, ply)
+			end
+
+			Warden.BackupCleanupAdd(ply, enttype, ent)
+		end
+
+		Warden.BackupCleanupReplaceEntity = Warden.BackupCleanupReplaceEntity or cleanup.ReplaceEntity
+		function cleanup.ReplaceEntity(from, to, ...)
+			local ret = { Warden.BackupCleanupReplaceEntity(from, to, ...) }
+			if ret[1] and IsValid(from) and IsValid(to) then
+				Warden.ReplaceOwner(from, to)
+			end
+
+			return unpack(ret)
+		end
+	end
+
+	if undo then
+		Warden.BackupUndoReplaceEntity = Warden.BackupUndoReplaceEntity or undo.ReplaceEntity
+		function undo.ReplaceEntity(from, to, ...)
+			local ret = { Warden.BackupUndoReplaceEntity(from, to, ...) }
+			if ret[1] and IsValid(from) and IsValid(to) then
+				Warden.ReplaceOwner(from, to)
+			end
+
+			return unpack(ret)
+		end
+
+		local currentUndo
+
+		Warden.BackupUndoCreate = Warden.BackupUndoCreate or undo.Create
+		function undo.Create(...)
+			currentUndo = { ents = {} }
+			return Warden.BackupUndoCreate(...)
+		end
+
+		Warden.BackupUndoAddEntity = Warden.BackupUndoAddEntity or undo.AddEntity
+		function undo.AddEntity(ent, ...)
+			if currentUndo and IsValid(ent) then
+				table.insert(currentUndo.ents, ent)
+			end
+
+			return Warden.BackupUndoAddEntity(ent, ...)
+		end
+
+		Warden.BackupUndoSetPlayer = Warden.BackupUndoSetPlayer or undo.SetPlayer
+		function undo.SetPlayer(ply, ...)
+			if currentUndo and IsValid(ply) then
+				currentUndo.owner = ply
+			end
+
+			return Warden.BackupUndoSetPlayer(ply, ...)
+		end
+
+		Warden.BackupUndoFinish = Warden.BackupUndoFinish or undo.Finish
+		function undo.Finish(...)
+			if not currentUndo then
+				return Warden.BackupUndoFinish(...)
+			end
+
+			local ply = currentUndo.owner
+			if not IsValid(ply) then
+				currentUndo = nil
+				return Warden.BackupUndoFinish(...)
+			end
+
+			for _, ent in ipairs(currentUndo.ents) do
+				if IsValid(ent) then
+					Warden.SetOwner(ent, ply)
+				end
+			end
+
+			currentUndo = nil
+			return Warden.BackupUndoFinish(...)
 		end
 	end
 
@@ -451,26 +544,6 @@ if SERVER then
 
 	function plyMeta:WardenSetAdminLevel(level)
 		self.WardenAdminLevel = level
-	end
-
-	if cleanup then
-		local backupCleanupAdd = cleanup.Add
-		function cleanup.Add(ply, enttype, ent)
-			if IsValid(ent) then
-				Warden.SetOwner(ent, ply)
-			end
-			backupCleanupAdd(ply, enttype, ent)
-		end
-	end
-	if undo then
-		local backupUndoReplaceEntity = undo.ReplaceEntity
-		function undo.ReplaceEntity(from, to)
-			if Warden.Ownership[from:EntIndex()] then
-				Warden.SetOwner(to, Warden.Ownership[from:EntIndex()].owner)
-			end
-
-			return backupUndoReplaceEntity(from, to)
-		end
 	end
 
 	hook.Add("PlayerSpawnedEffect",  "Warden", function(ply, _, ent) Warden.SetOwner(ent, ply) end)
@@ -543,21 +616,18 @@ if SERVER then
 			if not ent or ent:IsWorld() then return end
 			if not ent:IsPlayer() and Warden.GetOwner(ent) == game.GetWorld() then return end
 
-
 			local attacker = dmg:GetAttacker()
 			local inflictor = dmg:GetInflictor()
 			local owner = Warden.GetOwner(inflictor)
 			local entOwner = Warden.GetOwner(ent)
 			local ValidAttacker = IsValid(attacker)
-			
-			-- fix fire damage 
-			if ValidAttacker and attacker:GetClass()=="entityflame" then 
-				if IsValid(attacker:GetParent()) then 
-					attacker = attacker:GetParent():CPPIGetOwner()
-					dmg:SetAttacker(attacker)
-				end 
-			end 		
-			
+
+			-- fix fire damage
+			if ValidAttacker and attacker:GetClass() == "entityflame" and IsValid(attacker:GetParent()) then
+				attacker = attacker:GetParent():CPPIGetOwner()
+				dmg:SetAttacker(attacker)
+			end
+
 			if ent:IsVehicle() then -- Ignored damage types
 				return
 			elseif ValidAttacker and attacker:IsPlayer() and ent:IsPlayer() then -- Damage between players and players
@@ -622,6 +692,7 @@ if SERVER then
 		if GetConVar("warden_cleanup_disconnect"):GetBool() then
 			local time = GetConVar("warden_cleanup_time"):GetInt()
 			local name = data.name
+
 			timer.Create("WardenCleanup#" .. steamid, time, 1, function()
 				local count = Warden.CleanupEntities(steamid)
 				hook.Run("WardenNaturalCleanup", name, time, steamid, count)
