@@ -120,10 +120,26 @@ function Warden.HasPermission(receiver, granter, permission)
 	return (perm.global or false) ~= (perm[receiver:SteamID()] or false)
 end
 
+local plyMeta = FindMetaTable("Player")
+
+function plyMeta:WardenGetAdminLevel()
+	if GetConVar("warden_admin_level_needs_admin"):GetBool() and not self:IsAdmin() then
+		return 0
+	end
+
+	local adminLevel = SERVER and self.WardenAdminLevel or Warden.LocalAdminLevel
+	if not adminLevel then
+		adminLevel = GetConVar("warden_default_admin_level"):GetInt()
+	end
+
+	return adminLevel
+end
+
 gameevent.Listen("player_disconnect")
 
 if SERVER then
 	util.AddNetworkString("WardenUpdatePermission")
+	util.AddNetworkString("WardenAdminLevel")
 	util.AddNetworkString("WardenInitialize")
 
 	local initialized = {}
@@ -430,7 +446,6 @@ if SERVER then
 	end
 
 	-- Detours
-	local plyMeta = FindMetaTable("Player")
 
 	if plyMeta.AddCount then
 		Warden.BackupPlyAddCount = Warden.BackupPlyAddCount or plyMeta.AddCount
@@ -529,21 +544,12 @@ if SERVER then
 		end
 	end
 
-	function plyMeta:WardenGetAdminLevel()
-		if GetConVar("warden_admin_level_needs_admin"):GetBool() and not self:IsAdmin() then
-			return 0
-		end
-
-		local adminLevel = self.WardenAdminLevel
-		if not adminLevel then
-			adminLevel = GetConVar("warden_default_admin_level"):GetInt()
-		end
-
-		return adminLevel
-	end
-
 	function plyMeta:WardenSetAdminLevel(level)
 		self.WardenAdminLevel = level
+
+		net.Start("WardenAdminLevel")
+			net.WriteUInt(level, 8)
+		net.Send(self)
 	end
 
 	hook.Add("PlayerSpawnedEffect",  "Warden", function(ply, _, ent) Warden.SetOwner(ent, ply) end)
@@ -632,11 +638,13 @@ if SERVER then
 				return
 			elseif ValidAttacker and attacker:IsPlayer() and ent:IsPlayer() then -- Damage between players and players
 				local bothInKillstruct = ent:IsPlayer() and ent:GetNWBool("BS_KillStruct") and attacker:GetNWBool("BS_KillStruct")
+
 				if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then
 					return true
 				end -- Check if they're both in killstruct mode, or has permission.
 			elseif ValidAttacker and attacker:IsPlayer() and IsValid(entOwner) and entOwner:IsPlayer() then  -- Damage between players and props
 				local bothInKillstruct = entOwner:IsPlayer() and entOwner:GetNWBool("BS_KillStruct") and attacker:GetNWBool("BS_KillStruct")
+
 				if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then
 					return true
 				end -- Check if they're both in killstruct mode, or has permission.
@@ -644,11 +652,10 @@ if SERVER then
 				return true
 			elseif IsValid(owner) and owner:IsPlayer() then -- Damage between unknown attackers and their owners
 				local bothInKillstruct = IsValid(owner) and ent:IsPlayer() and ent:GetNWBool("BS_KillStruct") and owner:GetNWBool("BS_KillStruct")
+
 				if not Warden.CheckPermission(owner, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then
 					return true
 				end
-			elseif (not ValidAttacker or not IsValid(owner)) and owner ~= game.GetWorld() then
-				return true
 			end
 
 		-- return true -- do NOT return true unless you're the gamemode. You'll break other hooks
@@ -727,6 +734,10 @@ net.Receive("WardenInitialize", function()
 			end
 		end
 	end
+end)
+
+net.Receive("WardenAdminLevel", function()
+	Warden.LocalAdminLevel = net.ReadUInt(8)
 end)
 
 function Warden.GetOwnedEntities(steamid)

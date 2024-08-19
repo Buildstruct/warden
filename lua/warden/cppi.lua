@@ -83,7 +83,7 @@ if SERVER then
 
 	function entMeta:CPPICanDamage(ply)
 		local bothInKillstruct = self:IsPlayer() and self:GetNWBool("BS_KillStruct") and self:GetNWBool("BS_KillStruct")
-		if (bothInKillstruct) then
+		if bothInKillstruct then
 			return true
 		end
 

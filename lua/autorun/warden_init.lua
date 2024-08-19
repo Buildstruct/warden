@@ -12,3 +12,8 @@ include("warden/warden.lua")
 AddCSLuaFile("warden/cppi.lua")
 include("warden/cppi.lua")
 
+AddCSLuaFile("warden/entinfo.lua")
+if CLIENT then
+    include("warden/entinfo.lua")
+end
+
