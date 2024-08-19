@@ -46,6 +46,7 @@ end
 function Warden.CheckPermission(ent, checkEnt, permission)
 	if not (IsValid(checkEnt) or checkEnt:IsWorld()) then return false end
 	if not ent then return false end
+
 	local receiver
 	if ent:IsPlayer() then
 		if adminCheck(ent, permission) then
@@ -545,6 +546,10 @@ if SERVER then
 	end
 
 	function plyMeta:WardenSetAdminLevel(level)
+		if type(level) ~= "number" and type(level) ~= "nil" then
+			error("admin level must be a number or nil", 2)
+		end
+
 		self.WardenAdminLevel = level
 
 		net.Start("WardenAdminLevel")
@@ -619,46 +624,47 @@ if SERVER then
 	end)
 
 	hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
-			if not ent or ent:IsWorld() then return end
-			if not ent:IsPlayer() and Warden.GetOwner(ent) == game.GetWorld() then return end
+		if not ent or ent:IsWorld() then return end
+		if not ent:IsPlayer() and Warden.GetOwner(ent) == game.GetWorld() then return end
 
-			local attacker = dmg:GetAttacker()
-			local inflictor = dmg:GetInflictor()
-			local owner = Warden.GetOwner(inflictor)
-			local entOwner = Warden.GetOwner(ent)
-			local ValidAttacker = IsValid(attacker)
+		local attacker = dmg:GetAttacker()
+		local inflictor = dmg:GetInflictor()
+		local owner = Warden.GetOwner(inflictor)
+		local entOwner = Warden.GetOwner(ent)
+		local ValidAttacker = IsValid(attacker)
 
-			-- fix fire damage
-			if ValidAttacker and attacker:GetClass() == "entityflame" and IsValid(attacker:GetParent()) then
-				attacker = attacker:GetParent():CPPIGetOwner()
-				dmg:SetAttacker(attacker)
-			end
+		-- fix fire damage
+		if ValidAttacker and attacker:GetClass() == "entityflame" and IsValid(attacker:GetParent()) then
+			attacker = attacker:GetParent():CPPIGetOwner()
+			dmg:SetAttacker(attacker)
+		end
 
-			if ent:IsVehicle() then -- Ignored damage types
-				return
-			elseif ValidAttacker and attacker:IsPlayer() and ent:IsPlayer() then -- Damage between players and players
-				local bothInKillstruct = ent:IsPlayer() and ent:GetNWBool("BS_KillStruct") and attacker:GetNWBool("BS_KillStruct")
+		-- Ignored damage types
+		if ent:IsVehicle() then
+			return
+		end
 
-				if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then
-					return true
-				end -- Check if they're both in killstruct mode, or has permission.
-			elseif ValidAttacker and attacker:IsPlayer() and IsValid(entOwner) and entOwner:IsPlayer() then  -- Damage between players and props
-				local bothInKillstruct = entOwner:IsPlayer() and entOwner:GetNWBool("BS_KillStruct") and attacker:GetNWBool("BS_KillStruct")
-
-				if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then
-					return true
-				end -- Check if they're both in killstruct mode, or has permission.
-			elseif ent:IsPlayer() and attacker:IsWorld() or not ValidAttacker then -- Prevent crush damage / damage from the world 
+		if ValidAttacker and attacker:IsPlayer() then
+			-- Damage between players and players
+			if ent:IsPlayer() and not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then
 				return true
-			elseif IsValid(owner) and owner:IsPlayer() then -- Damage between unknown attackers and their owners
-				local bothInKillstruct = IsValid(owner) and ent:IsPlayer() and ent:GetNWBool("BS_KillStruct") and owner:GetNWBool("BS_KillStruct")
-
-				if not Warden.CheckPermission(owner, ent, Warden.PERMISSION_DAMAGE) and not bothInKillstruct then
-					return true
-				end
 			end
 
-		-- return true -- do NOT return true unless you're the gamemode. You'll break other hooks
+			-- Damage between players and props
+			if IsValid(entOwner) and entOwner:IsPlayer() and not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then
+				return true
+			end
+		end
+
+		-- Prevent crush damage / damage from the world 
+		if ent:IsPlayer() and attacker:IsWorld() or not ValidAttacker then
+			return true
+		end
+
+		-- Damage between unknown attackers and their owners
+		if IsValid(owner) and owner:IsPlayer() and not Warden.CheckPermission(owner, ent, Warden.PERMISSION_DAMAGE) then
+			return true
+		end
 	end)
 
 	hook.Add("CanProperty", "Warden", function(ply, property, ent)
