@@ -130,7 +130,12 @@ function PANEL:ShowColor(w)
 		return
 	end
 
-	local r, g, b, a = self.Entity:GetColor():Unpack()
+	local col = self.Entity:GetColor()
+	if col == color_white then
+		return
+	end
+
+	local r, g, b, a = col:Unpack()
 
 	local parsed = markup.Parse(string.format("<font=WardenEnt><color=192,192,192>color: </color><color=%s,%s,%s>●</color> [<color=255,128,128>%s</color>, <color=128,255,128>%s</color>, <color=128,128,255>%s</color>, %s]</font>", r, g, b, r, g, b, a))
 	self:DrawParsed(w, parsed)
