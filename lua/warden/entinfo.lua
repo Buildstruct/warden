@@ -5,15 +5,40 @@ local showModel = CreateClientConVar("warden_entinfo_show_model", "1", true, fal
 local showMaterial = CreateClientConVar("warden_entinfo_show_material", "0", true, false, "Show the material path of the entity you're aiming at", 0, 1)
 local showColor = CreateClientConVar("warden_entinfo_show_color", "0", true, false, "Show the color of the entity you're aiming at", 0, 1)
 local showPerms = CreateClientConVar("warden_entinfo_show_perms", "1", true, false, "Show the permissions you have with the entity you're aiming at", 0, 1)
+local fontSize = CreateClientConVar("warden_entinfo_size", "-1", true, false, "Change the size of the entinfo ui (-1 = auto)", -1, 2)
+local doBlur = CreateClientConVar("warden_entinfo_blur", "1", true, false, "Whether to blur the background of the entinfo panel", 0, 1)
 
-surface.CreateFont("WardenEntBig", {
+surface.CreateFont("WardenEntBig2", {
+	font = "Arial",
+	size = 35,
+})
+
+surface.CreateFont("WardenEnt2", {
+	font = "Arial",
+	italic = true,
+	size = 28,
+})
+
+surface.CreateFont("WardenEntBig1", {
+	font = "Arial",
+	size = 27,
+})
+
+surface.CreateFont("WardenEnt1", {
+	font = "Arial",
+	italic = true,
+	size = 22,
+})
+
+surface.CreateFont("WardenEntBig0", {
 	font = "Arial",
 	size = 20,
 })
 
-surface.CreateFont("WardenEnt", {
+surface.CreateFont("WardenEnt0", {
 	font = "Arial",
-	size = 14,
+	italic = true,
+	size = 16,
 })
 
 local PANEL = {}
@@ -24,6 +49,27 @@ function PANEL:Init()
 	self.Width, self.Height = 174, 30
 
 	self:SetSize(self.Width, self.Height)
+end
+
+function PANEL:DetermineFontSize()
+	local size = fontSize:GetInt()
+
+	if size >= 0 then
+		self.FontSize = size
+		return
+	end
+
+	if ScrW() > 3200 then
+		self.FontSize = 2
+	elseif ScrW() > 2200 then
+		self.FontSize = 1
+	else
+		self.FontSize = 0
+	end
+end
+
+function PANEL:GetFont(big)
+	return string.format("WardenEnt%s%s", big and "Big" or "", self.FontSize or 0)
 end
 
 function PANEL:PerformLayout(w, h)
@@ -86,7 +132,7 @@ function PANEL:ShowOwner(w)
 		r, g, b = 255, 192, 128
 	end
 
-	local parsed = markup.Parse(string.format("<font=WardenEntBig><color=192,192,192>owner: </color><color=%s,%s,%s>%s</color></font>", r, g, b, ownerName))
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>owner: </color><color=%s,%s,%s>%s</color></font>", self:GetFont(true), r, g, b, ownerName))
 	self:DrawParsed(w, parsed)
 end
 
@@ -95,7 +141,7 @@ function PANEL:ShowClass(w)
 		return
 	end
 
-	local parsed = markup.Parse(string.format("<font=WardenEnt><color=192,192,192>class: </color>%s (%s)</font>", self.Entity:GetClass(), self.Entity:EntIndex()))
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>class: </color>%s (%s)</font>", self:GetFont(), self.Entity:GetClass(), self.Entity:EntIndex()))
 	self:DrawParsed(w, parsed)
 end
 
@@ -104,7 +150,7 @@ function PANEL:ShowModel(w)
 		return
 	end
 
-	local parsed = markup.Parse(string.format("<font=WardenEnt><color=192,192,192>model: </color>%s</font>", self.Entity:GetModel()))
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>model: </color>%s</font>", self:GetFont(), self.Entity:GetModel()))
 	self:DrawParsed(w, parsed)
 end
 
@@ -121,7 +167,7 @@ function PANEL:ShowMaterial(w)
 		return
 	end
 
-	local parsed = markup.Parse(string.format("<font=WardenEnt><color=192,192,192>material: </color>%s</font>", mat))
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>material: </color>%s</font>", self:GetFont(), mat))
 	self:DrawParsed(w, parsed)
 end
 
@@ -137,7 +183,7 @@ function PANEL:ShowColor(w)
 
 	local r, g, b, a = col:Unpack()
 
-	local parsed = markup.Parse(string.format("<font=WardenEnt><color=192,192,192>color: </color><color=%s,%s,%s>●</color> [<color=255,128,128>%s</color>, <color=128,255,128>%s</color>, <color=128,128,255>%s</color>, %s]</font>", r, g, b, r, g, b, a))
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>color: </color><color=%s,%s,%s>●</color> [<color=255,128,128>%s</color>, <color=128,255,128>%s</color>, <color=128,128,255>%s</color>, %s]</font>", self:GetFont(), r, g, b, r, g, b, a))
 	self:DrawParsed(w, parsed)
 end
 
@@ -147,6 +193,7 @@ function PANEL:ShowPerms(w)
 	end
 
 	local plus = 0
+	local shift = (self.FontSize or 0) * 3
 	surface.SetDrawColor(255, 255, 255)
 	for k, v in ipairs(Warden.PermissionList) do
 		if k == Warden.PERMISSION_ALL then
@@ -157,7 +204,7 @@ function PANEL:ShowPerms(w)
 		end
 
 		surface.SetMaterial(v.icon)
-		surface.DrawTexturedRect(w - plus - 22, self.ItemY - 1, 16, 16)
+		surface.DrawTexturedRect(w - plus - 22, self.ItemY + shift, 16, 16)
 		plus = plus + 20
 	end
 
@@ -165,7 +212,7 @@ function PANEL:ShowPerms(w)
 		return
 	end
 
-	local parsed = markup.Parse("<font=WardenEnt><color=192,192,192>perms: </color></font>")
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>perms: </color></font>", self:GetFont()))
 	self:DrawParsed(w - plus, parsed, plus)
 end
 
@@ -183,6 +230,7 @@ end
 
 function PANEL:Paint(w, h)
 	self:Blur()
+	self:DetermineFontSize()
 
 	surface.SetDrawColor(0, 0, 0, 200)
 	surface.DrawRect(0, 0, w, h)
@@ -215,6 +263,10 @@ end
 
 local blur = Material("pp/blurscreen")
 function PANEL:Blur()
+	if not doBlur:GetBool() then
+		return
+	end
+
 	local x, y = self:LocalToScreen(0, 0)
 
 	surface.SetDrawColor(255, 255, 255)

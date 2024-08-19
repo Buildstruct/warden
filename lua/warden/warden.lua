@@ -34,25 +34,12 @@ local worldEntityPermissions = {
 	[Warden.PERMISSION_DAMAGE] = true,
 }
 
-local function adminCheck(ply, permission)
-	local permLevel = GetConVar("warden_admin_level_" .. Warden.PermissionList[permission].id):GetInt()
-	if permLevel < 0 then
-		permLevel = Warden.PermissionList[permission].defaultAdminLevel
-	end
-
-	return permLevel <= ply:WardenGetAdminLevel()
-end
-
 function Warden.CheckPermission(ent, checkEnt, permission)
 	if not (IsValid(checkEnt) or checkEnt:IsWorld()) then return false end
 	if not ent then return false end
 
 	local receiver
 	if ent:IsPlayer() then
-		if adminCheck(ent, permission) then
-			return true
-		end
-
 		receiver = ent
 	else
 		local owner = Warden.GetOwner(ent)
@@ -99,6 +86,15 @@ function Warden.HasPermissionGlobal(ply, permission)
 	return Warden.Permissions[ply:SteamID()][permission].global or false
 end
 
+local function adminCheck(ply, permission)
+	local permLevel = GetConVar("warden_admin_level_" .. Warden.PermissionList[permission].id):GetInt()
+	if permLevel < 0 then
+		permLevel = Warden.PermissionList[permission].defaultAdminLevel
+	end
+
+	return permLevel <= ply:WardenGetAdminLevel()
+end
+
 function Warden.HasPermission(receiver, granter, permission)
 	if not Warden.Permissions[granter:SteamID()] then
 		Warden.SetupPlayer(granter)
@@ -110,6 +106,10 @@ function Warden.HasPermission(receiver, granter, permission)
 	end
 
 	if receiver == granter then return true end
+
+	if adminCheck(receiver, permission) then
+		return true
+	end
 
 	if permission ~= Warden.PERMISSION_ALL and Warden.HasPermission(receiver, granter, Warden.PERMISSION_ALL) then
 		return true
