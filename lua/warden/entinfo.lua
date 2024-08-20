@@ -87,8 +87,7 @@ function PANEL:Reveal(goOut)
 		end
 
 		self:Stop()
-		self:Show()
-		self:AlphaTo(255, 0.15)
+		self:AlphaTo(255, 0.1)
 		self.Out = true
 
 		return
@@ -99,10 +98,8 @@ function PANEL:Reveal(goOut)
 	end
 
 	self:Stop()
+	self:AlphaTo(0, 0.25)
 	self.Out = nil
-	self:AlphaTo(0, 0.5, nil, function()
-		self:Hide()
-	end)
 end
 
 function PANEL:DrawParsed(right, parsed, plus)
@@ -307,6 +304,14 @@ end
 hook.Add("InitPostEntity", "WardenEntityInfo", function()
 	Warden.EntityInfo = vgui.Create("WardenEntityInfo")
 	hook.Add("Tick", "WardenEntityInfo", tick)
+end)
+
+hook.Add("PlayerSwitchWeapon", "BS_HideVoice", function(_, _, newWeapon)
+	if newWeapon:GetClass() == "gmod_camera" then
+		Warden.EntityInfo:Hide()
+	else
+		Warden.EntityInfo:Show()
+	end
 end)
 
 -- hotload support
