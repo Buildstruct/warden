@@ -283,6 +283,10 @@ end
 vgui.Register("WardenEntityInfo", PANEL, "DPanel")
 
 local function tick()
+	if not IsValid(Warden.EntityInfo) then
+		return
+	end
+
 	if not enabled:GetBool() then
 		Warden.EntityInfo:Reveal(false)
 		return
@@ -306,12 +310,29 @@ hook.Add("InitPostEntity", "WardenEntityInfo", function()
 	hook.Add("Tick", "WardenEntityInfo", tick)
 end)
 
-hook.Add("PlayerSwitchWeapon", "BS_HideVoice", function(_, _, newWeapon)
-	if newWeapon:GetClass() == "gmod_camera" then
+local hideHud = not GetConVar("cl_drawhud"):GetBool()
+local cameraOut
+
+local function hideEntInf()
+	if not IsValid(Warden.EntityInfo) then
+		return
+	end
+
+	if hideHud or cameraOut then
 		Warden.EntityInfo:Hide()
 	else
 		Warden.EntityInfo:Show()
 	end
+end
+
+cvars.AddChangeCallback("cl_drawhud", function(_, _, val)
+	hideHud = val == "0"
+	hideEntInf()
+end, "WardenHideEntInfo")
+
+hook.Add("PlayerSwitchWeapon", "WardenHideEntInfo", function(_, _, newWeapon)
+	cameraOut = newWeapon:GetClass() == "gmod_camera"
+	hideEntInf()
 end)
 
 -- hotload support
