@@ -148,6 +148,33 @@ function plyMeta:WardenEnsureSetup()
 	end
 end
 
+hook.Add("CanTool", "Warden", function(ply, tr, tool)
+	local ent = tr.Entity
+	if ent:IsWorld() then return true end
+
+	if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_TOOL) then
+		return false
+	end
+end)
+
+hook.Add("GravGunPunt", "Warden", function(ply, ent)
+	if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN) then
+		return false
+	end
+end)
+
+hook.Add("PhysgunPickup", "Warden", function(ply, ent)
+	if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_PHYSGUN) then
+		return false
+	end
+end)
+
+hook.Add("CanProperty", "Warden", function(ply, property, ent)
+	if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_TOOL) then
+		return false
+	end
+end)
+
 gameevent.Listen("player_disconnect")
 
 if SERVER then
@@ -586,57 +613,13 @@ if SERVER then
 
 	hook.Add("EntityRemoved", "Warden", Warden.ClearOwner)
 
-	hook.Add("CanTool", "Warden", function(ply, tr, tool)
-		local ent = tr.Entity
-		if not IsValid(ent) and not ent:IsWorld() then return false end
-		if not IsValid(ply) then return false end
-
-		if ent:IsWorld() then return true end
-		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_TOOL) then
-			return false
-		end
-	end)
-
-	hook.Add("PhysgunPickup", "Warden", function(ply, ent)
-		if not ent or ent:IsWorld() then return false end
-		if not IsValid(ply) then return false end
-
-		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_PHYSGUN) then
-			return false
-		end
-	end)
-
 	hook.Add("GravGunPickupAllowed", "Warden", function(ply, ent)
-		if not ent or ent:IsWorld() then return false end
-		if not IsValid(ply) then return false end
-
-		local owner = Warden.GetOwner(ent)
-		if owner and owner:IsWorld() then return end
-
-		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN) then
-			return false
-		end
-	end)
-
-	hook.Add("GravGunPunt", "Warden", function(ply, ent)
-		if not ent or ent:IsWorld() then return false end
-		if not IsValid(ply) then return false end
-
-		local owner = Warden.GetOwner(ent)
-		if owner and owner:IsWorld() then return  end
-
 		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN) then
 			return false
 		end
 	end)
 
 	hook.Add("PlayerUse", "Warden", function(ply, ent)
-		if not ent or ent:IsWorld() then return false end
-		if not IsValid(ply) then return false end
-
-		local owner = Warden.GetOwner(ent)
-		if owner and owner:IsWorld() then return end
-
 		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_USE) then
 			return false
 		end
@@ -675,7 +658,7 @@ if SERVER then
 			end
 		end
 
-		-- Prevent crush damage / damage from the world 
+		-- Prevent crush damage / damage from the world
 		if ent:IsPlayer() and attacker:IsWorld() or not ValidAttacker then
 			return true
 		end
@@ -686,27 +669,14 @@ if SERVER then
 		end
 	end)
 
-	hook.Add("CanProperty", "Warden", function(ply, property, ent)
-		if not ent or ent:IsWorld() then return false end
-		if not IsValid(ply) then return false end
-
+	hook.Add("CanEditVariable", "Warden", function(ent, ply)
 		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_TOOL) then
 			return false
 		end
 	end)
 
-	hook.Add("CanEditVariable", "Warden", function(ent, ply, key, val, editor)
-		if not ent or ent:IsWorld() then return false end
-		if not IsValid(ply) then return false end
-
-		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_TOOL) then
-			return false
-		end
-	end)
-
-	hook.Add("OnPhysgunReload", "Warden", function(wep, ply)
+	hook.Add("OnPhysgunReload", "Warden", function(_, ply)
 		local ent = ply:GetEyeTrace().Entity
-		if not IsValid(ent) then return false end
 
 		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_PHYSGUN) then
 			return false
