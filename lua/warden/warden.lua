@@ -25,68 +25,18 @@ function Warden.PlayerIsDisconnected(steamid)
 	return not IsValid(ply)
 end
 
-local worldEntityPermissions = {
-	[Warden.PERMISSION_ALL] = false,
-	[Warden.PERMISSION_PHYSGUN] = false,
-	[Warden.PERMISSION_GRAVGUN] = true,
-	[Warden.PERMISSION_TOOL] = false,
-	[Warden.PERMISSION_USE] = true,
-	[Warden.PERMISSION_DAMAGE] = true,
-}
-
-function Warden.CheckPermission(ent, checkEnt, permission)
-	if not (IsValid(checkEnt) or checkEnt:IsWorld()) then return false end
-	if not ent then return false end
-
-	local receiver
-	if ent:IsPlayer() then
-		receiver = ent
-	else
-		local owner = Warden.GetOwner(ent)
-		if owner then
-			if owner:IsPlayer() then
-				receiver = owner
-			elseif owner:IsWorld() then
-				return worldEntityPermissions[permission]
-			else
-				return false
-			end
-		else
-			return false
-		end
+local function worldCheck(permission)
+	local perm = GetConVar("warden_world_" .. Warden.PermissionList[permission].id):GetInt()
+	if perm < 0 then
+		return Warden.PermissionList[permission].defaultWorldPerm
 	end
 
-	if checkEnt:IsPlayer() then
-		if checkEnt:IsBot() and GetConVar("warden_always_target_bots"):GetBool() then
-			return true
-		end
-
-		return Warden.HasPermission(receiver, checkEnt, permission)
-	end
-
-	local owner = Warden.GetOwner(checkEnt)
-	if not IsValid(owner) then return false end
-
-	return Warden.HasPermission(receiver, owner, permission)
-end
-
-function Warden.HasPermissionLocal(receiver, granter, permission)
-	if not Warden.Permissions[granter:SteamID()] then
-		Warden.SetupPlayer(granter)
-	end
-
-	return Warden.Permissions[granter:SteamID()][permission][receiver:SteamID()] or false
-end
-
-function Warden.HasPermissionGlobal(ply, permission)
-	if not Warden.Permissions[ply:SteamID()] then
-		Warden.SetupPlayer(ply)
-	end
-
-	return Warden.Permissions[ply:SteamID()][permission].global or false
+	return perm == 1
 end
 
 local function adminCheck(ply, permission)
+	if not IsValid(ply) then return end
+
 	local permLevel = GetConVar("warden_admin_level_" .. Warden.PermissionList[permission].id):GetInt()
 	if permLevel < 0 then
 		permLevel = Warden.PermissionList[permission].defaultAdminLevel
@@ -95,30 +45,86 @@ local function adminCheck(ply, permission)
 	return permLevel <= ply:WardenGetAdminLevel()
 end
 
-function Warden.HasPermission(receiver, granter, permission)
-	if not Warden.Permissions[granter:SteamID()] then
-		Warden.SetupPlayer(granter)
+function Warden.CheckPermission(receiver, granter, permission)
+	if not Warden.PermissionList[permission] then return false end
+
+	receiver = Warden.GetOwner(receiver)
+	granter = Warden.GetOwner(granter)
+	if not receiver or not granter then return false end
+
+	if adminCheck(receiver, permission) then return true end
+
+	if (receiver.IsWorld and receiver:IsWorld()) or (granter.IsWorld and granter:IsWorld()) then
+		local wOverride = hook.Run("WardenCheckPermissionWorld", receiver, granter, permission)
+		if wOverride ~= nil then return wOverride end
+
+		return worldCheck(permission)
 	end
 
+	if not IsValid(receiver) or not IsValid(granter) then return end
+
+	-- both receiver and granter are confirmed players
+
 	local override = hook.Run("WardenCheckPermission", receiver, granter, permission)
-	if override ~= nil then
-		return override
+	if override ~= nil then return override end
+
+	if granter:IsBot() and GetConVar("warden_always_target_bots"):GetBool() then
+		return true
 	end
 
 	if receiver == granter then return true end
 
-	if adminCheck(receiver, permission) then
+	if permission ~= Warden.PERMISSION_ALL and Warden.CheckPermission(receiver, granter, Warden.PERMISSION_ALL) then
 		return true
 	end
 
-	if permission ~= Warden.PERMISSION_ALL and Warden.HasPermission(receiver, granter, Warden.PERMISSION_ALL) then
-		return true
-	end
+	granter:WardenEnsureSetup()
 
 	--make individual permissions exclude players when the global permission is set
 	--we do 'or false' to ensure the permission isn't nil for the inequality
 	local perm = Warden.Permissions[granter:SteamID()][permission]
 	return (perm.global or false) ~= (perm[receiver:SteamID()] or false)
+end
+
+Warden.HasPermission = Warden.CheckPermission
+
+function Warden.GetAllPermissions(receiver, granter)
+	if not receiver and not granter then
+		return Warden.PermissionList
+	end
+
+	if Warden.CheckPermission(receiver, granter, Warden.PERMISSION_ALL) then
+		return { [Warden.PERMISSION_ALL] = Warden.PermissionList[Warden.PERMISSION_ALL] }
+	end
+
+	local perms = {}
+
+	for k, v in ipairs(Warden.PermissionList) do
+		if Warden.CheckPermission(receiver, granter, k) then
+			perms[k] = v
+		end
+	end
+
+	return perms
+end
+
+function Warden.HasPermissionLocal(receiver, granter, permission)
+	receiver = Warden.GetOwner(receiver)
+	granter = Warden.GetOwner(granter)
+	if not IsValid(receiver) or not IsValid(granter) then return false end
+
+	granter:WardenEnsureSetup()
+
+	return Warden.Permissions[granter:SteamID()][permission][receiver:SteamID()] or false
+end
+
+function Warden.HasPermissionGlobal(ent, permission)
+	local ply = Warden.GetOwner(ent)
+	if not IsValid(ply) then return false end
+
+	ply:WardenEnsureSetup()
+
+	return Warden.Permissions[ply:SteamID()][permission].global or false
 end
 
 local plyMeta = FindMetaTable("Player")
@@ -134,6 +140,12 @@ function plyMeta:WardenGetAdminLevel()
 	end
 
 	return adminLevel
+end
+
+function plyMeta:WardenEnsureSetup()
+	if not Warden.Permissions[self:SteamID()] then
+		Warden.SetupPlayer(self)
+	end
 end
 
 gameevent.Listen("player_disconnect")
@@ -220,6 +232,8 @@ if SERVER then
 	end
 
 	function Warden.ClearOwner(ent)
+		if not IsValid(ent) then return end
+
 		local index = ent:EntIndex()
 		local ownership = Warden.Ownership[index]
 		if ownership then
@@ -236,13 +250,20 @@ if SERVER then
 	end
 
 	function Warden.GetOwner(ent)
+		if not IsValid(ent) then
+			if ent == nil or not ent.IsWorld then return end
+			if ent:IsWorld() then return ent end
+			return
+		end
+
+		if ent:IsPlayer() then return ent end
+
 		local ownership = Warden.Ownership[ent:EntIndex()]
 		return ownership and ownership.owner
 	end
 
 	function Warden.SetOwnerWorld(ent)
 		local world = game.GetWorld()
-
 		local index = ent:EntIndex()
 
 		-- Cleanup original ownership if has one
@@ -334,9 +355,7 @@ if SERVER then
 	end
 
 	function Warden.GrantPermission(granter, receiver, permission)
-		if not Warden.Permissions[granter:SteamID()] then
-			Warden.SetupPlayer(granter)
-		end
+		granter:WardenEnsureSetup()
 
 		if IsValid(receiver) and receiver:IsPlayer() then
 			if Warden.Permissions[granter:SteamID()][permission]["global"] then
@@ -768,6 +787,14 @@ end
 
 -- Clientside permission setting
 function Warden.GetOwner(ent)
+	if not IsValid(ent) then
+		if ent == nil or not ent.IsWorld then return end
+		if ent:IsWorld() then return ent end
+		return
+	end
+
+	if ent:IsPlayer() then return ent end
+
 	return ent:GetNWEntity("OwnerEnt")
 end
 
@@ -780,9 +807,7 @@ net.Receive("WardenUpdatePermission", function()
 		return
 	end
 
-	if not Warden.Permissions[granter:SteamID()] then
-		Warden.SetupPlayer(granter)
-	end
+	granter:WardenEnsureSetup()
 
 	if net.ReadBool() then
 		Warden.Permissions[granter:SteamID()][permission]["global"] = granting

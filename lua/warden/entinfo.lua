@@ -192,14 +192,7 @@ function PANEL:ShowPerms(w)
 	local plus = 0
 	local shift = (self.FontSize or 0) * 3
 	surface.SetDrawColor(255, 255, 255)
-	for k, v in ipairs(Warden.PermissionList) do
-		if k == Warden.PERMISSION_ALL then
-			continue
-		end
-		if not Warden.CheckPermission(LocalPlayer(), self.Entity, k) then
-			continue
-		end
-
+	for k, v in pairs(Warden.GetAllPermissions(LocalPlayer(), self.Entity)) do
 		surface.SetMaterial(v.icon)
 		surface.DrawTexturedRect(w - plus - 22, self.ItemY + shift, 16, 16)
 		plus = plus + 20
