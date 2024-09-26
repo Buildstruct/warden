@@ -638,7 +638,9 @@ if SERVER then
 		-- fix fire damage
 		if ValidAttacker and attacker:GetClass() == "entityflame" and IsValid(attacker:GetParent()) then
 			attacker = attacker:GetParent():CPPIGetOwner()
-			dmg:SetAttacker(attacker)
+			if attacker ~= nil then
+				dmg:SetAttacker(attacker)
+			end
 		end
 
 		-- Ignored damage types
