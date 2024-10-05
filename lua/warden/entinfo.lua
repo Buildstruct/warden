@@ -117,10 +117,10 @@ function PANEL:ShowOwner(w)
 		return
 	end
 
-	local ownerName = self.Entity:GetNWString("Owner")
+	local ownerName = self.Entity:WardenGetOwnerName("")
 	local r, g, b = 255, 255, 255
 
-	local ownerID = self.Entity:GetNWString("OwnerID")
+	local ownerID = self.Entity:WardenGetOwnerID()
 	if ownerID == "World" then
 		ownerName = "[[WORLD]]"
 		r, g, b = 255, 128, 255
