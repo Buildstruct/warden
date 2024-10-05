@@ -28,7 +28,7 @@ function Warden.GetPlayerTable(plyOrID)
 	if type(plyOrID) == "string" then
 		id = plyOrID
 	else
-		if not IsValid(plyOrID) then return end
+		if not IsValid(plyOrID) then return {} end
 		id = plyOrID:SteamID()
 	end
 
@@ -92,7 +92,7 @@ function Warden.GetOwnerTable(entOrID)
 	if type(entOrID) == "number" then
 		id = entOrID
 	else
-		if not IsValid(entOrID) then return end
+		if not IsValid(entOrID) then return {} end
 		id = entOrID:EntIndex()
 	end
 
