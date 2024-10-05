@@ -11,17 +11,17 @@ end
 
 Warden.SteamIDMap = Warden.SteamIDMap or {}
 
-function Warden.GetPlayerFromSteamID(steamid)
-	if not Warden.SteamIDMap[steamid] then
+function Warden.GetPlayerFromSteamID(steamID)
+	if not Warden.SteamIDMap[steamID] then
 		for _, ply in pairs(player.GetAll()) do
 			Warden.SteamIDMap[ply:SteamID()] = ply
 		end
 	end
-	return Warden.SteamIDMap[steamid]
+	return Warden.SteamIDMap[steamID]
 end
 
-function Warden.PlayerIsDisconnected(steamid)
-	local ply = Warden.GetPlayerFromSteamID(steamid)
+function Warden.PlayerIsDisconnected(steamID)
+	local ply = Warden.GetPlayerFromSteamID(steamID)
 	return not IsValid(ply)
 end
 
@@ -190,21 +190,21 @@ if SERVER then
 		Warden.SetupPlayer(ply)
 		net.Start("WardenInitialize")
 		net.WriteUInt(#Warden.Permissions, 8)
-		for steamid, perms in pairs(Warden.Permissions) do
-			net.WriteString(steamid)
+		for steamID, perms in pairs(Warden.Permissions) do
+			net.WriteString(steamID)
 			net.WriteUInt(#perms, 8)
-			for permisson, ssteamids in pairs(perms) do
+			for permisson, ssteamIDs in pairs(perms) do
 				net.WriteUInt(permisson, 8)
 
 				local toSend = {}
-				for ssteamid, granted in pairs(ssteamids) do
+				for ssteamID, granted in pairs(ssteamIDs) do
 					if granted then
-						table.insert(toSend, ssteamid)
+						table.insert(toSend, ssteamID)
 					end
 				end
 				net.WriteUInt(#toSend, 8)
-				for _, ssteamid in ipairs(toSend) do
-					net.WriteString(ssteamid)
+				for _, ssteamID in ipairs(toSend) do
+					net.WriteString(ssteamID)
 				end
 			end
 		end
@@ -317,41 +317,41 @@ if SERVER then
 		end
 	end
 
-	function Warden.FreezeEntities(steamid)
+	function Warden.FreezeEntities(steamID)
 		local count = 0
-		for _, ent in ipairs(Warden.GetOwnedEntities(steamid)) do
+		for _, ent in ipairs(Warden.GetOwnedEntities(steamID)) do
 			for i = 0, ent:GetPhysicsObjectCount() - 1 do
 				local phys = ent:GetPhysicsObjectNum(i)
 				phys:EnableMotion(false)
 			end
 			count = count + 1
 		end
-		hook.Run("WardenFreeze", steamid, count)
+		hook.Run("WardenFreeze", steamID, count)
 	end
 
-	function Warden.CleanupEntities(steamid)
+	function Warden.CleanupEntities(steamID)
 		local count = 0
-		for _, ent in ipairs(Warden.GetOwnedEntities(steamid)) do
+		for _, ent in ipairs(Warden.GetOwnedEntities(steamID)) do
 			ent:Remove()
 		end
 		count = count + 1
 
-		hook.Run("WardenCleanup", steamid, count)
+		hook.Run("WardenCleanup", steamID, count)
 		return count
 	end
 
 	function Warden.FreezeDisconnected()
-		for steamid, _ in pairs(Warden.GetPlayerTable()) do
-			if Warden.PlayerIsDisconnected(steamid) then
-				Warden.FreezeEntities(steamid)
+		for steamID, _ in pairs(Warden.GetPlayerTable()) do
+			if Warden.PlayerIsDisconnected(steamID) then
+				Warden.FreezeEntities(steamID)
 			end
 		end
 	end
 
 	function Warden.CleanupDisconnected()
-		for steamid, _ in pairs(Warden.GetPlayerTable()) do
-			if Warden.PlayerIsDisconnected(steamid) then
-				Warden.CleanupEntities(steamid)
+		for steamID, _ in pairs(Warden.GetPlayerTable()) do
+			if Warden.PlayerIsDisconnected(steamID) then
+				Warden.CleanupEntities(steamID)
 			end
 		end
 	end
@@ -550,20 +550,20 @@ if SERVER then
 	end)
 
 	hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
-		local steamid = data.networkid
-		Warden.Permissions[steamid] = nil
+		local steamID = data.networkid
+		Warden.Permissions[steamID] = nil
 
 		if GetConVar("warden_freeze_disconnect"):GetBool() then
-			Warden.FreezeEntities(steamid)
+			Warden.FreezeEntities(steamID)
 		end
 
 		if GetConVar("warden_cleanup_disconnect"):GetBool() then
 			local time = GetConVar("warden_cleanup_time"):GetInt()
 			local name = data.name
 
-			timer.Create("WardenCleanup#" .. steamid, time, 1, function()
-				local count = Warden.CleanupEntities(steamid)
-				hook.Run("WardenNaturalCleanup", name, time, steamid, count)
+			timer.Create("WardenCleanup#" .. steamID, time, 1, function()
+				local count = Warden.CleanupEntities(steamID)
+				hook.Run("WardenNaturalCleanup", name, time, steamID, count)
 			end)
 		end
 	end)
@@ -644,7 +644,7 @@ function Warden.RevokePermission(receiver, permission)
 end
 
 hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
-	local steamid = data.networkid
-	Warden.Permissions[steamid] = nil
+	local steamID = data.networkid
+	Warden.Permissions[steamID] = nil
 end)
 
