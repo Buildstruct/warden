@@ -2,11 +2,14 @@ local NET = {
 	ALL_ENT = 0,
 	ALL_PLY = 1,
 	NEW_ENT = 2,
-	NEW_PLY = 3
+	NEW_PLY = 3,
+	NEW_WORLD = 4,
+	NEW_NONE = 5
 }
 
-local NET_SIZE_TYPE = 2
+local NET_SIZE_TYPE = 3
 local NET_SIZE = 13
+local WORLD_ID = "18446744073709551615"
 
 Warden.Ownership = Warden.Ownership or {}
 Warden.Players = Warden.Players or {}
@@ -25,6 +28,7 @@ function Warden.GetPlayerTable(plyOrID)
 	if type(plyOrID) == "string" then
 		id = plyOrID
 	else
+		if not IsValid(plyOrID) then return end
 		id = plyOrID:SteamID()
 	end
 
@@ -39,11 +43,14 @@ function Warden.GetOwnedEntities(plyOrID)
 	local tbl = Warden.GetPlayerTable(plyOrID)
 
 	local _ents = {}
-	for entIndex, _ in pairs(tbl) do
-		local entity = Entity(entIndex)
-		if not IsValid(entity) then continue end
+	for entID, _ in pairs(tbl) do
+		local ent = Entity(entID)
+		if not IsValid(ent) then
+			tbl[entID] = nil
+			continue
+		end
 
-		table.insert(_ents, entity)
+		table.insert(_ents, ent)
 	end
 
 	return _ents
@@ -57,10 +64,15 @@ function Warden.GetOwnedEntitiesByClass(plyOrID, class)
 	local tbl = Warden.GetPlayerTable(plyOrID)
 
 	local _ents = {}
-	for entIndex, _ in pairs(tbl) do
-		local entity = Entity(entIndex)
-		if IsValid(entity) and entity:GetClass() == class then
-			table.insert(_ents, entity)
+	for entID, _ in pairs(tbl) do
+		local ent = Entity(entID)
+		if not IsValid(ent) then
+			tbl[entID] = nil
+			continue
+		end
+
+		if ent:GetClass() == class then
+			table.insert(_ents, ent)
 		end
 	end
 
@@ -80,6 +92,7 @@ function Warden.GetOwnerTable(entOrID)
 	if type(entOrID) == "number" then
 		id = entOrID
 	else
+		if not IsValid(entOrID) then return end
 		id = entOrID:EntIndex()
 	end
 
@@ -177,18 +190,14 @@ function Warden.SetOwner(ent, ply)
 	end
 
 	Warden.Ownership[index] = {
-		ent = ent,
 		owner = ply,
 		steamID = steamID
 	}
 
-	if not Warden.Players[steamID] then
-		Warden.Players[steamID] = {}
-	end
-
+	Warden.Players[steamID] = Warden.Players[steamID] or {}
 	Warden.Players[steamID][index] = true
 
-	Warden.UpdateOwnerData(steamID, ent:EntIndex())
+	Warden.UpdateOwnerData(steamID, index)
 end
 function ENTITY:WardenSetOwner(ply)
 	Warden.SetOwner(self, ply)
@@ -209,91 +218,95 @@ function ENTITY:WardenReplaceOwner(to)
 end
 
 -- remove ownership from an entity
-function Warden.ClearOwner(ent)
-	if not IsValid(ent) then return end
-
-	local index = ent:EntIndex()
-	local ownership = Warden.Ownership[index]
-	if ownership then
-		if Warden.Players[ownership.steamID] then
-			Warden.Players[ownership.steamID][index] = nil
-		end
-
-		Warden.Ownership[index] = nil
+function Warden.ClearOwner(entOrID)
+	local id
+	if type(entOrID) == "number" then
+		id = entOrID
+	else
+		if not IsValid(entOrID) then return end
+		id = entOrID:EntIndex()
 	end
 
-	Warden.UpdateOwnerData("None", ent:EntIndex())
+	local ownership = Warden.Ownership[id]
+	if ownership then
+		if Warden.Players[ownership.steamID] then
+			Warden.Players[ownership.steamID][id] = nil
+		end
+
+		Warden.Ownership[id] = nil
+	end
+
+	Warden.UpdateOwnerData("None", id)
 end
 function ENTITY:WardenClearOwner()
 	Warden.ClearOwner(self)
 end
 
 -- set the owner of an entity as the world
-function Warden.SetOwnerWorld(ent)
+function Warden.SetOwnerWorld(entOrID)
+	local id
+	if type(entOrID) == "number" then
+		id = entOrID
+	else
+		if not IsValid(entOrID) then return end
+		id = entOrID:EntIndex()
+	end
+
 	local world = game.GetWorld()
-	local index = ent:EntIndex()
 
 	-- Cleanup original ownership if has one
-	if Warden.GetOwnerTable(index) then
-		local lastOwner = Warden.Ownership[index]
+	if Warden.GetOwnerTable(id) then
+		local lastOwner = Warden.Ownership[id]
 
 		if Warden.Players[lastOwner.steamID] then
-			Warden.Players[lastOwner.steamID][index] = nil
+			Warden.Players[lastOwner.steamID][id] = nil
 		end
 	end
 
-	Warden.Ownership[index] = {
-		ent = ent,
+	Warden.Ownership[id] = {
 		owner = world,
 		steamID = "World",
 	}
 
-	Warden.UpdateOwnerData("World", ent:EntIndex())
+	Warden.Players["World"] = Warden.Players["World"] or {}
+	Warden.Players["World"][id] = true
+
+	Warden.UpdateOwnerData("World", id)
 end
 function ENTITY:WardenSetOwnerWorld()
 	Warden.SetOwnerWorld(self)
 end
 
 -- offline variant of setowner for networking
-function Warden.SetOwnerOffline(ent, steamID, plyMaybe)
-	if not IsValid(ent) then
-		return
-	end
-
+function Warden.SetOwnerOffline(entID, steamID, plyMaybe)
 	if steamID == "World" then
-		Warden.SetOwnerWorld(ent)
+		Warden.SetOwnerWorld(entID)
 		return
 	end
 
-	if not steamID or steamID == "None" then
-		Warden.ClearOwner(ent)
+	if not steamID or steamID == "" then
+		Warden.ClearOwner(entID)
 		return
 	end
-
-	local index = ent:EntIndex()
 
 	-- Cleanup original ownership if has one
-	if Warden.Ownership[index] then
-		local lastOwner = Warden.Ownership[index]
+	if Warden.Ownership[entID] then
+		local lastOwner = Warden.Ownership[entID]
 
 		if Warden.Players[lastOwner.steamID] then
-			Warden.Players[lastOwner.steamID][index] = nil
+			Warden.Players[lastOwner.steamID][entID] = nil
 		end
 	end
 
-	Warden.Ownership[index] = {
-		ent = ent,
+	Warden.Ownership[entID] = {
 		owner = plyMaybe,
 		steamID = steamID
 	}
 
-	if not Warden.Players[steamID] then
-		Warden.Players[steamID] = {}
-	end
+	Warden.Players[steamID] = Warden.Players[steamID] or {}
+	Warden.Players[steamID][entID] = true
 
-	Warden.Players[steamID][index] = true
-
-	Warden.UpdateOwnerData(steamID, ent:EntIndex())
+	Warden.UpdateOwnerData(steamID, entID)
 end
 
 if SERVER then
@@ -307,7 +320,8 @@ if SERVER then
 
 		net.WriteUInt(table.Count(Warden.Players), NET_SIZE)
 		for k, v in pairs(Warden.Players) do
-			net.WriteUInt64(util.SteamIDTo64(k))
+			local id = k == "World" and WORLD_ID or util.SteamIDTo64(k)
+			net.WriteUInt64(id)
 
 			net.WriteUInt(table.Count(v), NET_SIZE)
 			for k1, _ in pairs(v) do
@@ -325,7 +339,7 @@ if SERVER then
 		net.WriteUInt(NET.ALL_PLY, NET_SIZE_TYPE)
 
 		net.WriteUInt(table.Count(Warden.Names), NET_SIZE)
-		for k, v in pairs(Warden.names) do
+		for k, v in pairs(Warden.Names) do
 			net.WriteUInt64(util.SteamIDTo64(k))
 			net.WriteString(v)
 		end
@@ -342,30 +356,46 @@ if SERVER then
 	local toUpdateNone = {}
 
 	local function updateOwnerData()
-		net.Start("WardenOwnership")
-		net.WriteUInt(NET.NEW_ENT, NET_SIZE_TYPE)
+		if not table.IsEmpty(toUpdate) then
+			net.Start("WardenOwnership")
+			net.WriteUInt(NET.NEW_ENT, NET_SIZE_TYPE)
 
-		net.WriteUInt(table.Count(toUpdate), NET_SIZE)
-		for k, v in pairs(toUpdate) do
-			net.WriteUInt64(util.SteamIDTo64(k))
+			net.WriteUInt(table.Count(toUpdate), NET_SIZE)
+			for k, v in pairs(toUpdate) do
+				local id = k == "World" and WORLD_ID or util.SteamIDTo64(k)
+				net.WriteUInt64(id)
 
-			net.WriteUInt(table.Count(v), NET_SIZE)
-			for k1, _ in pairs(v) do
-				net.WriteUInt(k1, NET_SIZE)
+				net.WriteUInt(table.Count(v), NET_SIZE)
+				for k1, _ in pairs(v) do
+					net.WriteUInt(k1, NET_SIZE)
+				end
 			end
+
+			net.Broadcast()
+		end
+		if not table.IsEmpty(toUpdateWorld) then
+			net.Start("WardenOwnership")
+			net.WriteUInt(NET.NEW_WORLD, NET_SIZE_TYPE)
+
+			net.WriteUInt(table.Count(toUpdateWorld), NET_SIZE)
+			for k, _ in pairs(toUpdateWorld) do
+				net.WriteUInt(k, NET_SIZE)
+			end
+
+			net.Broadcast()
+		end
+		if not table.IsEmpty(toUpdateNone) then
+			net.Start("WardenOwnership")
+			net.WriteUInt(NET.NEW_NONE, NET_SIZE_TYPE)
+
+			net.WriteUInt(table.Count(toUpdateNone), NET_SIZE)
+			for k, _ in pairs(toUpdateNone) do
+				net.WriteUInt(k, NET_SIZE)
+			end
+
+			net.Broadcast()
 		end
 
-		net.WriteUInt(table.Count(toUpdateWorld), NET_SIZE)
-		for k, _ in pairs(toUpdateWorld) do
-			net.WriteUInt(k, NET_SIZE)
-		end
-
-		net.WriteUInt(table.Count(toUpdateNone), NET_SIZE)
-		for k, _ in pairs(toUpdateNone) do
-			net.WriteUInt(k, NET_SIZE)
-		end
-
-		net.Broadcast()
 		toUpdate = {}
 		toUpdateWorld = {}
 		toUpdateNone = {}
@@ -405,9 +435,13 @@ if SERVER then
 		net.WriteString(ply:Nick())
 
 		net.SendOmit(ply)
+	end)
 
+	net.Receive("WardenOwnership", function(_, ply)
 		Warden.SendAllOwnerData(ply)
 	end)
+
+	timer.Create("WardenSendAllOwnerData", 120, 0, Warden.SendAllOwnerData)
 
 	return
 end
@@ -415,59 +449,47 @@ end
 -- dummy function for shared parity
 function Warden.UpdateOwnerData() end
 
-local readNet = {
+-- ask the server for owner data
+function Warden.RequestAllOwnerData()
+	net.Start("WardenOwnership")
+	net.SendToServer()
+end
+
+local readNet
+readNet = {
 	[NET.ALL_ENT] = function()
 		Warden.Ownership = {}
 		Warden.Players = {}
 
-		local count = net.ReadUInt(NET_SIZE)
-		for i = 1, count do
-			local steamID = util.SteamIDFrom64(net.ReadUInt64())
-			Warden.Players[steamID] = {}
-			local ply = player.GetBySteamID(steamID)
-
-			local entCount = net.ReadUInt(NET_SIZE)
-			for j = 1, entCount do
-				local entID = net.ReadUInt(NET_SIZE)
-				Warden.SetOwnerOffline(Entity(entID), steamID, ply)
-			end
-		end
+		readNet[NET.NEW_ENT]()
 	end,
 	[NET.ALL_PLY] = function()
 		Warden.Names = {}
 
 		local count = net.ReadUInt(NET_SIZE)
 		for i = 1, count do
-			local steamID = util.SteamIDFrom64(net.ReadUInt64())
-			local name = net.ReadString()
-
-			Warden.Names[steamID] = name
+			readNet[NET.NEW_PLY]()
 		end
 	end,
 	[NET.NEW_ENT] = function()
 		local entCount = net.ReadUInt(NET_SIZE)
 		for i = 1, entCount do
-			local steamID = util.SteamIDFrom64(net.ReadUInt64())
+			local sid64 = net.ReadUInt64()
+			local steamID, ply
+			if sid64 == WORLD_ID then
+				steamID = "World"
+			else
+				steamID = util.SteamIDFrom64(sid64)
+				ply = player.GetBySteamID(steamID)
+			end
+
 			Warden.Players[steamID] = Warden.Players[steamID] or {}
-			local ply = player.GetBySteamID(steamID)
 
 			local entCount1 = net.ReadUInt(NET_SIZE)
 			for j = 1, entCount1 do
 				local entID = net.ReadUInt(NET_SIZE)
-				Warden.SetOwnerOffline(Entity(entID), steamID, ply)
+				Warden.SetOwnerOffline(entID, steamID, ply)
 			end
-		end
-
-		local worldCount = net.ReadUInt(NET_SIZE)
-		for i = 1, worldCount do
-			local entID = net.ReadUInt(NET_SIZE)
-			Warden.SetOwnerWorld(Entity(entID))
-		end
-
-		local noneCount = net.ReadUInt(NET_SIZE)
-		for i = 1, noneCount do
-			local entID = net.ReadUInt(NET_SIZE)
-			Warden.ClearOwner(Entity(entID))
 		end
 	end,
 	[NET.NEW_PLY] = function()
@@ -475,9 +497,28 @@ local readNet = {
 		local name = net.ReadString()
 
 		Warden.Names[steamID] = name
+	end,
+	[NET.NEW_WORLD] = function()
+		local worldCount = net.ReadUInt(NET_SIZE)
+		for i = 1, worldCount do
+			local entID = net.ReadUInt(NET_SIZE)
+			Warden.SetOwnerWorld(entID)
+		end
+	end,
+	[NET.NEW_NONE] = function()
+		local noneCount = net.ReadUInt(NET_SIZE)
+		for i = 1, noneCount do
+			local entID = net.ReadUInt(NET_SIZE)
+			Warden.ClearOwner(entID)
+		end
 	end
 }
 
 net.Receive("WardenOwnership", function()
 	readNet[net.ReadUInt(NET_SIZE_TYPE)]()
+end)
+
+hook.Add("InitPostEntity", "WardenGetOwnerData", function()
+	timer.Simple(10, Warden.RequestAllOwnerData)
+	Warden.RequestAllOwnerData()
 end)

@@ -318,10 +318,8 @@ if SERVER then
 	end
 
 	function Warden.FreezeEntities(steamid)
-		local tbl = Warden.GetPlayerTable(steamid)
 		local count = 0
-		for entIndex, _ in pairs(tbl) do
-			local ent = Entity(entIndex)
+		for _, ent in ipairs(Warden.GetOwnedEntities(steamid)) do
 			for i = 0, ent:GetPhysicsObjectCount() - 1 do
 				local phys = ent:GetPhysicsObjectNum(i)
 				phys:EnableMotion(false)
@@ -332,10 +330,9 @@ if SERVER then
 	end
 
 	function Warden.CleanupEntities(steamid)
-		local tbl = Warden.GetPlayerTable(steamid)
 		local count = 0
-		for entIndex, _ in pairs(tbl) do
-			Entity(entIndex):Remove()
+		for _, ent in ipairs(Warden.GetOwnedEntities(steamid)) do
+			ent:Remove()
 		end
 		count = count + 1
 
