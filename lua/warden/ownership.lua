@@ -18,6 +18,20 @@ Warden.Names = Warden.Names or {}
 local ENTITY = FindMetaTable("Entity")
 local PLAYER = FindMetaTable("Player")
 
+-- returns whether an entity is a valid owner
+-- second term returns whether it is valid according to IsValid
+function Warden.IsValidOwner(ent)
+	if IsValid(ent) then
+		return true, true
+	end
+
+	if ent and ent.IsWorld and ent:IsWorld() then
+		return true, false
+	end
+
+	return false, false
+end
+
 -- either retrieve the entire player table or the table of a single player
 function Warden.GetPlayerTable(plyOrID)
 	if not plyOrID then
@@ -123,8 +137,8 @@ end
 function Warden.GetOwnerID(ent)
 	local owner = Warden.GetOwner(ent)
 	if owner then
-		if owner:IsWorld() then return "World" end
-		return owner:SteamID()
+		if owner.IsWorld and owner:IsWorld() then return "World" end
+		if IsValid(owner) then return owner:SteamID() end
 	end
 
 	local ownership = Warden.GetOwnerTable(ent)

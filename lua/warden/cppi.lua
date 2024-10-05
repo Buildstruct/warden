@@ -36,10 +36,10 @@ end
 local entMeta = FindMetaTable("Entity")
 
 function entMeta:CPPIGetOwner()
-	local ownerEnt = self:WardenGetOwner()
-	local steamID = self:WardenGetOwnerID()
+	local ownerEnt = Warden.GetOwner(self)
+	local steamID = Warden.GetOwnerID(self)
 
-	if IsValid(ownerEnt) or (ownerEnt and ownerEnt:IsWorld()) then
+	if Warden.IsValidOwner(ownerEnt) then
 		return ownerEnt, steamID
 	elseif steamID ~= "" then
 		return nil, steamID
