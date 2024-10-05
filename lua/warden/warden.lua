@@ -9,6 +9,11 @@ function Warden.SetupPlayer(plyOrID)
 	end
 end
 
+local USE_EXCEPTIONS = {
+	mediaplayer_tv = true,
+	mediaplayer_tv_ext = true
+}
+
 Warden.SteamIDMap = Warden.SteamIDMap or {}
 
 function Warden.GetPlayerFromSteamID(steamID)
@@ -484,6 +489,8 @@ if SERVER then
 	end)
 
 	hook.Add("PlayerUse", "Warden", function(ply, ent)
+		if USE_EXCEPTIONS[ent:GetClass()] or ent.AlwaysUsable then return end
+
 		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_USE) then
 			return false
 		end
