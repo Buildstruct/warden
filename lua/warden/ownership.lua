@@ -28,7 +28,7 @@ function Warden.GetPlayerTable(plyOrID)
 	if type(plyOrID) == "string" then
 		id = plyOrID
 	else
-		if not IsValid(plyOrID) then return {} end
+		if not IsValid(plyOrID) then return end
 		id = plyOrID:SteamID()
 	end
 
@@ -92,7 +92,7 @@ function Warden.GetOwnerTable(entOrID)
 	if type(entOrID) == "number" then
 		id = entOrID
 	else
-		if not IsValid(entOrID) then return {} end
+		if not IsValid(entOrID) then return end
 		id = entOrID:EntIndex()
 	end
 
@@ -105,7 +105,7 @@ end
 -- get the owner of an entity
 function Warden.GetOwner(ent)
 	if not IsValid(ent) then
-		if ent == nil or not ent.IsWorld then return NULL end
+		if ent == nil or not ent.IsWorld then return end
 		if ent:IsWorld() then return ent end
 		return
 	end
@@ -113,7 +113,7 @@ function Warden.GetOwner(ent)
 	if ent:IsPlayer() then return ent end
 
 	local ownership = Warden.GetOwnerTable(ent)
-	return ownership and ownership.owner or NULL
+	return ownership and ownership.owner
 end
 function ENTITY:WardenGetOwner()
 	return Warden.GetOwner(self)
@@ -122,8 +122,10 @@ end
 -- get the owner steamid of an entity
 function Warden.GetOwnerID(ent)
 	local owner = Warden.GetOwner(ent)
-	if owner:IsWorld() then return "World" end
-	if owner:IsPlayer() then return owner:SteamID() end
+	if owner then
+		if owner:IsWorld() then return "World" end
+		return owner:SteamID()
+	end
 
 	local ownership = Warden.GetOwnerTable(ent)
 	return ownership and ownership.steamID
@@ -135,8 +137,8 @@ end
 -- get the owner name of an entity
 function Warden.GetOwnerName(ent, fallback)
 	local owner = Warden.GetOwner(ent)
+	if not owner then return fallback end
 	if owner:IsWorld() then return "World" end
-	if not owner:IsValid() then return fallback end
 
 	local ownerID = Warden.GetOwnerID(ent)
 	if not ownerID then return fallback end
