@@ -150,9 +150,6 @@ end
 
 -- get the owner name of an entity
 function Warden.GetOwnerName(ent, fallback)
-	local owner = Warden.GetOwner(ent)
-	if owner and owner.IsWorld and owner:IsWorld() then return "World" end
-
 	local ownerID = Warden.GetOwnerID(ent)
 	if not ownerID then return fallback end
 
