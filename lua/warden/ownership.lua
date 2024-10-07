@@ -9,7 +9,7 @@ local NET = {
 
 local NET_SIZE_TYPE = 3
 local NET_SIZE = 13
-local WORLD_ID = "18446744073709551615"
+local WORLD_ID = "18446744073709551614"
 
 Warden.Ownership = Warden.Ownership or {}
 Warden.Players = Warden.Players or {}
@@ -151,8 +151,7 @@ end
 -- get the owner name of an entity
 function Warden.GetOwnerName(ent, fallback)
 	local owner = Warden.GetOwner(ent)
-	if not owner then return fallback end
-	if owner:IsWorld() then return "World" end
+	if owner and owner.IsWorld and owner:IsWorld() then return "World" end
 
 	local ownerID = Warden.GetOwnerID(ent)
 	if not ownerID then return fallback end
