@@ -14,17 +14,6 @@ local USE_EXCEPTIONS = {
 	mediaplayer_tv_ext = true
 }
 
-Warden.SteamIDMap = Warden.SteamIDMap or {}
-
-function Warden.GetPlayerFromSteamID(steamID)
-	if not Warden.SteamIDMap[steamID] then
-		for _, ply in pairs(player.GetAll()) do
-			Warden.SteamIDMap[ply:SteamID()] = ply
-		end
-	end
-	return Warden.SteamIDMap[steamID]
-end
-
 function Warden.PlayerIsDisconnected(steamID)
 	local ply = Warden.GetPlayerFromSteamID(steamID)
 	return not IsValid(ply)

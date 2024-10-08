@@ -14,9 +14,24 @@ local WORLD_ID = "18446744073709551614"
 Warden.Ownership = Warden.Ownership or {}
 Warden.Players = Warden.Players or {}
 Warden.Names = Warden.Names or {}
+Warden.SteamIDMap = Warden.SteamIDMap or {}
 
 local ENTITY = FindMetaTable("Entity")
 local PLAYER = FindMetaTable("Player")
+
+-- get the player entity from a steamid, does caching unlike gmod's version
+function Warden.GetPlayerFromSteamID(steamID)
+	if steamID == "World" then return game.GetWorld() end
+
+	if not Warden.SteamIDMap[steamID] then
+		Warden.SteamIDMap = {}
+		for _, ply in player.Iterator() do
+			Warden.SteamIDMap[ply:SteamID()] = ply
+		end
+	end
+
+	return Warden.SteamIDMap[steamID]
+end
 
 -- returns whether an entity is a valid owner
 -- second term returns whether it is valid according to IsValid
@@ -127,7 +142,7 @@ function Warden.GetOwner(ent)
 	if ent:IsPlayer() then return ent end
 
 	local ownership = Warden.GetOwnerTable(ent)
-	return ownership and ownership.owner
+	return ownership and Warden.GetPlayerFromSteamID(ownership.steamID)
 end
 function ENTITY:WardenGetOwner()
 	return Warden.GetOwner(self)
@@ -167,47 +182,66 @@ end
 
 -- set an entity's owner to a player
 -- will correctly set the owner if you instead supply the world, another entity, or nil
-function Warden.SetOwner(ent, ply)
-	if not IsValid(ent) then
-		return
-	end
+function Warden.SetOwner(entOrID, plyOrID)
+	local entID, steamID
 
-	if ply and ply:IsWorld() then
-		Warden.SetOwnerWorld(ent)
-		return
-	end
-
-	if not IsValid(ply) then
-		Warden.ClearOwner(ent)
-		return
-	end
-
-	if not ply:IsPlayer() then
-		Warden.ReplaceOwner(ent, ply)
-		return
-	end
-
-	local index = ent:EntIndex()
-	local steamID = ply:SteamID()
-
-	-- Cleanup original ownership if has one
-	if Warden.Ownership[index] then
-		local lastOwner = Warden.Ownership[index]
-
-		if Warden.Players[lastOwner.steamID] then
-			Warden.Players[lastOwner.steamID][index] = nil
+	if type(plyOrID) == "string" then
+		steamID = plyOrID
+	else
+		if plyOrID and plyOrID.IsWorld and plyOrID:IsWorld() then
+			Warden.SetOwnerWorld(entOrID)
+			return
 		end
+
+		if not IsValid(plyOrID) then
+			Warden.ClearOwner(entOrID)
+			return
+		end
+
+		if not plyOrID:IsPlayer() then
+			Warden.ReplaceOwner(entOrID, plyOrID)
+			return
+		end
+
+		steamID = plyOrID:SteamID()
 	end
 
-	Warden.Ownership[index] = {
-		owner = ply,
+	if type(entOrID) == "number" then
+		if SERVER and not IsValid(Entity(entOrID)) then
+			Warden.ClearOwner(entOrID)
+			return
+		end
+
+		entID = entOrID
+	else
+		if not IsValid(entOrID) then return end
+		entID = entOrID:EntIndex()
+	end
+
+	if steamID == "World" then
+		Warden.SetOwnerWorld(entID)
+		return
+	end
+
+	if steamID == "" then
+		Warden.ClearOwner(entID)
+		return
+	end
+
+	Warden.ClearOwner(entID, true)
+
+	Warden.Ownership[entID] = {
 		steamID = steamID
 	}
 
 	Warden.Players[steamID] = Warden.Players[steamID] or {}
-	Warden.Players[steamID][index] = true
+	Warden.Players[steamID][entID] = true
 
-	Warden.UpdateOwnerData(steamID, index)
+	Warden.UpdateOwnerData(steamID, entID)
+
+	if SERVER then
+		Entity(entID):CallOnRemove("WardenOwnership", Warden.ClearOwner)
+	end
 end
 function ENTITY:WardenSetOwner(ply)
 	Warden.SetOwner(self, ply)
@@ -221,14 +255,14 @@ function Warden.ReplaceOwner(from, to)
 	local id = Warden.GetOwnerTable(from)
 	if not id then return end -- is ownerless
 
-	Warden.SetOwner(to, id.owner)
+	Warden.SetOwner(to, Warden.GetPlayerFromSteamID(id.steamID))
 end
 function ENTITY:WardenReplaceOwner(to)
 	Warden.SetOwner(self, to)
 end
 
 -- remove ownership from an entity
-function Warden.ClearOwner(entOrID)
+function Warden.ClearOwner(entOrID, noNetwork)
 	local id
 	if type(entOrID) == "number" then
 		id = entOrID
@@ -241,12 +275,18 @@ function Warden.ClearOwner(entOrID)
 	if ownership then
 		if Warden.Players[ownership.steamID] then
 			Warden.Players[ownership.steamID][id] = nil
+
+			if table.IsEmpty(Warden.Players[ownership.steamID]) then
+				Warden.Players[ownership.steamID] = nil
+			end
 		end
 
 		Warden.Ownership[id] = nil
 	end
 
-	Warden.UpdateOwnerData("None", id)
+	if not noNetwork then
+		Warden.UpdateOwnerData("None", id)
+	end
 end
 function ENTITY:WardenClearOwner()
 	Warden.ClearOwner(self)
@@ -256,25 +296,20 @@ end
 function Warden.SetOwnerWorld(entOrID)
 	local id
 	if type(entOrID) == "number" then
+		if SERVER and not IsValid(Entity(EntOrID)) then
+			Warden.ClearOwner(id)
+			return
+		end
+
 		id = entOrID
 	else
 		if not IsValid(entOrID) then return end
 		id = entOrID:EntIndex()
 	end
 
-	local world = game.GetWorld()
-
-	-- Cleanup original ownership if has one
-	if Warden.GetOwnerTable(id) then
-		local lastOwner = Warden.Ownership[id]
-
-		if Warden.Players[lastOwner.steamID] then
-			Warden.Players[lastOwner.steamID][id] = nil
-		end
-	end
+	Warden.ClearOwner(id, true)
 
 	Warden.Ownership[id] = {
-		owner = world,
 		steamID = "World",
 	}
 
@@ -282,41 +317,13 @@ function Warden.SetOwnerWorld(entOrID)
 	Warden.Players["World"][id] = true
 
 	Warden.UpdateOwnerData("World", id)
+
+	if SERVER then
+		Entity(id):CallOnRemove("WardenOwnership", Warden.ClearOwner)
+	end
 end
 function ENTITY:WardenSetOwnerWorld()
 	Warden.SetOwnerWorld(self)
-end
-
--- offline variant of setowner for networking
-function Warden.SetOwnerOffline(entID, steamID, plyMaybe)
-	if steamID == "World" then
-		Warden.SetOwnerWorld(entID)
-		return
-	end
-
-	if not steamID or steamID == "" then
-		Warden.ClearOwner(entID)
-		return
-	end
-
-	-- Cleanup original ownership if has one
-	if Warden.Ownership[entID] then
-		local lastOwner = Warden.Ownership[entID]
-
-		if Warden.Players[lastOwner.steamID] then
-			Warden.Players[lastOwner.steamID][entID] = nil
-		end
-	end
-
-	Warden.Ownership[entID] = {
-		owner = plyMaybe,
-		steamID = steamID
-	}
-
-	Warden.Players[steamID] = Warden.Players[steamID] or {}
-	Warden.Players[steamID][entID] = true
-
-	Warden.UpdateOwnerData(steamID, entID)
 end
 
 if SERVER then
@@ -485,20 +492,14 @@ readNet = {
 		local entCount = net.ReadUInt(NET_SIZE)
 		for i = 1, entCount do
 			local sid64 = net.ReadUInt64()
-			local steamID, ply
-			if sid64 == WORLD_ID then
-				steamID = "World"
-			else
-				steamID = util.SteamIDFrom64(sid64)
-				ply = player.GetBySteamID(steamID)
-			end
+			local steamID = sid64 == WORLD_ID and "World" or util.SteamIDFrom64(sid64)
 
 			Warden.Players[steamID] = Warden.Players[steamID] or {}
 
 			local entCount1 = net.ReadUInt(NET_SIZE)
 			for j = 1, entCount1 do
 				local entID = net.ReadUInt(NET_SIZE)
-				Warden.SetOwnerOffline(entID, steamID, ply)
+				Warden.SetOwner(entID, steamID)
 			end
 		end
 	end,
