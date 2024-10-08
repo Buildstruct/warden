@@ -497,8 +497,9 @@ if SERVER then
 
 		-- fix fire damage
 		if ValidAttacker and attacker:GetClass() == "entityflame" and IsValid(attacker:GetParent()) then
-			attacker = attacker:GetParent():CPPIGetOwner()
-			if attacker ~= nil then
+			local newAttacker = attacker:GetParent():CPPIGetOwner()
+			if Warden.IsValidOwner(newAttacker) then
+				attacker = newAttacker
 				dmg:SetAttacker(attacker)
 			end
 		end
