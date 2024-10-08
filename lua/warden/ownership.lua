@@ -34,14 +34,14 @@ function Warden.GetPlayerFromSteamID(steamID)
 end
 
 -- returns whether an entity is a valid owner
--- second term returns whether it is valid according to IsValid
+-- second term returns whether it is the world or not
 function Warden.IsValidOwner(ent)
 	if IsValid(ent) then
-		return true, true
+		return true, false
 	end
 
 	if ent and ent.IsWorld and ent:IsWorld() then
-		return true, false
+		return true, true
 	end
 
 	return false, false
@@ -133,16 +133,8 @@ end
 
 -- get the owner of an entity
 function Warden.GetOwner(ent)
-	if not IsValid(ent) then
-		if ent == nil or not ent.IsWorld then return end
-		if ent:IsWorld() then return ent end
-		return
-	end
-
-	if ent:IsPlayer() then return ent end
-
-	local ownership = Warden.GetOwnerTable(ent)
-	return ownership and Warden.GetPlayerFromSteamID(ownership.steamID)
+	local steamID = Warden.GetOwnerID(ent)
+	if steamID then return Warden.GetPlayerFromSteamID(steamID) end
 end
 function ENTITY:WardenGetOwner()
 	return Warden.GetOwner(self)
@@ -150,11 +142,11 @@ end
 
 -- get the owner steamid of an entity
 function Warden.GetOwnerID(ent)
-	local owner = Warden.GetOwner(ent)
-	if owner then
-		if owner.IsWorld and owner:IsWorld() then return "World" end
-		if IsValid(owner) then return owner:SteamID() end
-	end
+	local valid, world = Warden.IsValidOwner(ent)
+	if not valid then return end
+
+	if world then return "World" end
+	if ent:IsPlayer() then return ent:SteamID() end
 
 	local ownership = Warden.GetOwnerTable(ent)
 	return ownership and ownership.steamID
@@ -181,6 +173,7 @@ function Warden.GetNameFromSteamID(steamID, fallback)
 end
 
 -- set an entity's owner to a player
+-- id to entity must be valid serverside
 -- will correctly set the owner if you instead supply the world, another entity, or nil
 function Warden.SetOwner(entOrID, plyOrID)
 	local entID, steamID
@@ -243,25 +236,39 @@ function Warden.SetOwner(entOrID, plyOrID)
 		Entity(entID):CallOnRemove("WardenOwnership", Warden.ClearOwner)
 	end
 end
-function ENTITY:WardenSetOwner(ply)
-	Warden.SetOwner(self, ply)
+function ENTITY:WardenSetOwner(plyOrID)
+	Warden.SetOwner(self, plyOrID)
 end
 
 -- replace an entity's owner with that of another entity's
 function Warden.ReplaceOwner(from, to)
-	if not IsValid(from) or from:IsPlayer() then return end
-	if not IsValid(to) or to:IsPlayer() then return end
+	if from == to then return end
 
-	local id = Warden.GetOwnerTable(from)
-	if not id then return end -- is ownerless
+	local fromID, toID
+	if type(from) == "number" then
+		fromID = from
+	else
+		if not IsValid(from) then return end
+		fromID = from:EntIndex()
+	end
+	if type(to) == "number" then
+		toID = to
+	else
+		if not IsValid(to) then return end
+		toID = to:EntIndex()
+	end
 
-	Warden.SetOwner(to, Warden.GetPlayerFromSteamID(id.steamID))
+	local ownership = Warden.GetOwnerTable(fromID)
+	if not ownership then return end -- is ownerless
+
+	Warden.SetOwner(toID, ownership.steamID)
 end
 function ENTITY:WardenReplaceOwner(to)
 	Warden.SetOwner(self, to)
 end
 
 -- remove ownership from an entity
+-- set noNetwork to true to disable server networking to clients
 function Warden.ClearOwner(entOrID, noNetwork)
 	local id
 	if type(entOrID) == "number" then
@@ -288,11 +295,12 @@ function Warden.ClearOwner(entOrID, noNetwork)
 		Warden.UpdateOwnerData("None", id)
 	end
 end
-function ENTITY:WardenClearOwner()
-	Warden.ClearOwner(self)
+function ENTITY:WardenClearOwner(noNetwork)
+	Warden.ClearOwner(self, noNetwork)
 end
 
 -- set the owner of an entity as the world
+-- id to entity must be valid serverside
 function Warden.SetOwnerWorld(entOrID)
 	local id
 	if type(entOrID) == "number" then
