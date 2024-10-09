@@ -19,6 +19,8 @@ Warden.SteamIDMap = Warden.SteamIDMap or {}
 local ENTITY = FindMetaTable("Entity")
 local PLAYER = FindMetaTable("Player")
 
+--- // helpers // ---
+
 -- get the player entity from a steamid, does caching unlike gmod's version
 function Warden.GetPlayerFromSteamID(steamID)
 	if steamID == "World" then return game.GetWorld() end
@@ -31,6 +33,12 @@ function Warden.GetPlayerFromSteamID(steamID)
 	end
 
 	return Warden.SteamIDMap[steamID]
+end
+
+-- get the name of a player with x steamid
+function Warden.GetNameFromSteamID(steamID, fallback)
+	if steamID == "World" then return "World" end
+	return Warden.Names[steamID] or fallback
 end
 
 -- returns whether an entity is a valid owner
@@ -47,29 +55,35 @@ function Warden.IsValidOwner(ent)
 	return false, false
 end
 
--- either retrieve the entire player table or the table of a single player
-function Warden.GetPlayerTable(plyOrID)
-	if not plyOrID then
-		return Warden.Players
-	end
+-- get a steamid out of a var that might or might not be a player
+function Warden.PossibleSteamID(plyOrID)
+	if type(plyOrID) == "string" then return plyOrID end
 
-	local id
-	if type(plyOrID) == "string" then
-		id = plyOrID
-	else
-		if not IsValid(plyOrID) then return {} end
-		id = plyOrID:SteamID()
-	end
+	local valid, world = Warden.IsValidOwner(plyOrID)
+	if world then return "World" end
+	if valid and plyOrID:IsPlayer() then return plyOrID:SteamID() end
+end
 
-	return Warden.Players[id] or {}
+-- get an entindex out of a var that might or might not be an entity
+function Warden.PossibleEntIndex(entOrID)
+	if type(entOrID) == "number" then return entOrID end
+
+	if not IsValid(entOrID) then return end
+	return entOrID:EntIndex()
 end
-function PLAYER:WardenGetPlayerTable()
-	return Warden.GetPlayerTable(self)
-end
+
+--- // getters // ---
 
 -- get all entities owned by a player
-function Warden.GetOwnedEntities(plyOrID)
+-- the callback receives each ent and returns whether the ent should be added to the list
+function Warden.GetOwnedEntities(plyOrID, callback)
 	local tbl = Warden.GetPlayerTable(plyOrID)
+	if table.IsEmpty(tbl) then return {} end
+
+	local steamID = Warden.PossibleSteamID(plyOrID)
+	if not steamID then return {} end
+
+	callback = callback or function() return true end
 
 	local _ents = {}
 	for entID, _ in pairs(tbl) do
@@ -79,7 +93,14 @@ function Warden.GetOwnedEntities(plyOrID)
 			continue
 		end
 
-		table.insert(_ents, ent)
+		if Warden.GetOwnerID(ent) ~= steamID then
+			tbl[entID] = nil
+			continue
+		end
+
+		if callback(ent) then
+			table.insert(_ents, ent)
+		end
 	end
 
 	return _ents
@@ -88,47 +109,14 @@ function PLAYER:WardenGetOwnedEntities()
 	return Warden.GetOwnedEntities(self)
 end
 
--- get all entities owned by a player of a specific class
+-- get all entities of a specific class owned by a player
 function Warden.GetOwnedEntitiesByClass(plyOrID, class)
-	local tbl = Warden.GetPlayerTable(plyOrID)
-
-	local _ents = {}
-	for entID, _ in pairs(tbl) do
-		local ent = Entity(entID)
-		if not IsValid(ent) then
-			tbl[entID] = nil
-			continue
-		end
-
-		if ent:GetClass() == class then
-			table.insert(_ents, ent)
-		end
-	end
-
-	return _ents
+	return Warden.GetOwnedEntities(plyOrID, function(ent)
+		return ent:GetClass() == class
+	end)
 end
 function PLAYER:WardenGetOwnedEntitiesByClass(class)
 	return Warden.GetOwnedEntitiesByClass(self, class)
-end
-
--- either retrieve the entire owner table or the table of a single entity
-function Warden.GetOwnerTable(entOrID)
-	if not entOrID then
-		return Warden.Ownership
-	end
-
-	local id
-	if type(entOrID) == "number" then
-		id = entOrID
-	else
-		if not IsValid(entOrID) then return {} end
-		id = entOrID:EntIndex()
-	end
-
-	return Warden.Ownership[id]
-end
-function ENTITY:WardenGetOwnerTable()
-	return Warden.GetOwnerTable(self)
 end
 
 -- get the owner of an entity
@@ -149,7 +137,7 @@ function Warden.GetOwnerID(ent)
 	if ent:IsPlayer() then return ent:SteamID() end
 
 	local ownership = Warden.GetOwnerTable(ent)
-	return ownership and ownership.steamID
+	if ownership then return ownership.steamID end
 end
 function ENTITY:WardenGetOwnerID()
 	return Warden.GetOwnerID(self)
@@ -166,49 +154,29 @@ function ENTITY:WardenGetOwnerName(fallback)
 	return Warden.GetOwnerName(self, fallback)
 end
 
--- get the name of a player with x steamid
-function Warden.GetNameFromSteamID(steamID, fallback)
-	if steamID == "World" then return "World" end
-	return Warden.Names[steamID] or fallback
-end
+--- // setters // ---
 
 -- set an entity's owner to a player
 -- id to entity must be valid serverside
 -- will correctly set the owner if you instead supply the world, another entity, or nil
 function Warden.SetOwner(entOrID, plyOrID)
-	local entID, steamID
+	local entID = Warden.PossibleEntIndex(entOrID)
+	if not entID then return end
 
-	if type(plyOrID) == "string" then
-		steamID = plyOrID
-	else
-		if plyOrID and plyOrID.IsWorld and plyOrID:IsWorld() then
-			Warden.SetOwnerWorld(entOrID)
-			return
-		end
+	if SERVER and not IsValid(Entity(entID)) then
+		Warden.ClearOwner(entID)
+		return
+	end
 
-		if not IsValid(plyOrID) then
-			Warden.ClearOwner(entOrID)
-			return
-		end
-
-		if not plyOrID:IsPlayer() then
+	local steamID = Warden.PossibleSteamID(plyOrID)
+	if not steamID then
+		if IsValid(plyOrID) then
 			Warden.ReplaceOwner(entOrID, plyOrID)
 			return
 		end
 
-		steamID = plyOrID:SteamID()
-	end
-
-	if type(entOrID) == "number" then
-		if SERVER and not IsValid(Entity(entOrID)) then
-			Warden.ClearOwner(entOrID)
-			return
-		end
-
-		entID = entOrID
-	else
-		if not IsValid(entOrID) then return end
-		entID = entOrID:EntIndex()
+		Warden.ClearOwner(entID)
+		return
 	end
 
 	if steamID == "World" then
@@ -240,43 +208,11 @@ function ENTITY:WardenSetOwner(plyOrID)
 	Warden.SetOwner(self, plyOrID)
 end
 
--- replace an entity's owner with that of another entity's
-function Warden.ReplaceOwner(from, to)
-	if from == to then return end
-
-	local fromID, toID
-	if type(from) == "number" then
-		fromID = from
-	else
-		if not IsValid(from) then return end
-		fromID = from:EntIndex()
-	end
-	if type(to) == "number" then
-		toID = to
-	else
-		if not IsValid(to) then return end
-		toID = to:EntIndex()
-	end
-
-	local ownership = Warden.GetOwnerTable(fromID)
-	if not ownership then return end -- is ownerless
-
-	Warden.SetOwner(toID, ownership.steamID)
-end
-function ENTITY:WardenReplaceOwner(to)
-	Warden.SetOwner(self, to)
-end
-
 -- remove ownership from an entity
 -- set noNetwork to true to disable server networking to clients
 function Warden.ClearOwner(entOrID, noNetwork)
-	local id
-	if type(entOrID) == "number" then
-		id = entOrID
-	else
-		if not IsValid(entOrID) then return end
-		id = entOrID:EntIndex()
-	end
+	local id = Warden.PossibleEntIndex(entOrID)
+	if not id then return end
 
 	local ownership = Warden.Ownership[id]
 	if ownership then
@@ -302,17 +238,12 @@ end
 -- set the owner of an entity as the world
 -- id to entity must be valid serverside
 function Warden.SetOwnerWorld(entOrID)
-	local id
-	if type(entOrID) == "number" then
-		if SERVER and not IsValid(Entity(EntOrID)) then
-			Warden.ClearOwner(id)
-			return
-		end
+	local id = Warden.PossibleEntIndex(entOrID)
+	if not id then return end
 
-		id = entOrID
-	else
-		if not IsValid(entOrID) then return end
-		id = entOrID:EntIndex()
+	if SERVER and not IsValid(Entity(id)) then
+		Warden.ClearOwner(id)
+		return
 	end
 
 	Warden.ClearOwner(id, true)
@@ -332,6 +263,53 @@ function Warden.SetOwnerWorld(entOrID)
 end
 function ENTITY:WardenSetOwnerWorld()
 	Warden.SetOwnerWorld(self)
+end
+
+-- replace an entity's owner with that of another entity's
+function Warden.ReplaceOwner(from, to)
+	if from == to then return end
+
+	local fromID = Warden.PossibleEntIndex(from)
+	if not fromID then return end
+
+	local toID = Warden.PossibleEntIndex(to)
+	if not toID then return end
+
+	local ownership = Warden.GetOwnerTable(fromID)
+	if not ownership then return end -- is ownerless
+
+	Warden.SetOwner(toID, ownership.steamID)
+end
+function ENTITY:WardenReplaceOwner(to)
+	Warden.SetOwner(self, to)
+end
+
+--- // internal // ---
+
+-- either retrieve the entire owner table or the table of a single entity
+-- intended to be internal
+function Warden.GetOwnerTable(entOrID)
+	if not entOrID then
+		return Warden.Ownership
+	end
+
+	local id = Warden.PossibleEntIndex(entOrID)
+	if not id then return end
+
+	return Warden.Ownership[id]
+end
+
+-- get a list of entids that a player owns
+-- intended to be internal
+function Warden.GetPlayerTable(plyOrID)
+	if not plyOrID then
+		return Warden.Players
+	end
+
+	local id = Warden.PossibleSteamID(plyOrID)
+	if not id then return {} end
+
+	return Warden.Players[id] or {}
 end
 
 if SERVER then
@@ -472,9 +450,11 @@ if SERVER then
 end
 
 -- dummy function for shared parity
+-- intended to be internal
 function Warden.UpdateOwnerData() end
 
 -- ask the server for owner data
+-- intended to be internal
 function Warden.RequestAllOwnerData()
 	net.Start("WardenOwnership")
 	net.SendToServer()
