@@ -25,7 +25,7 @@ local PLAYER = FindMetaTable("Player")
 function Warden.GetPlayerFromSteamID(steamID)
 	if steamID == "World" then return game.GetWorld() end
 
-	if not Warden.SteamIDMap[steamID] then
+	if not IsValid(Warden.SteamIDMap[steamID]) then
 		Warden.SteamIDMap = {}
 		for _, ply in player.Iterator() do
 			Warden.SteamIDMap[ply:SteamID()] = ply
