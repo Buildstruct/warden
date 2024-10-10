@@ -154,6 +154,19 @@ function ENTITY:WardenGetOwnerName(fallback)
 	return Warden.GetOwnerName(self, fallback)
 end
 
+-- returns how many times an entity's owner has changed
+-- possibly useful for debugging and sanity checks
+function Warden.GetOwnerChanges(entOrID)
+	local tbl = Warden.GetOwnerTable(entOrID)
+	if not tbl then return 0 end -- never had an owner
+	if not tbl.changes then return 1 end -- had its first owner
+
+	return tbl.changes
+end
+function ENTITY:WardenGetOwnerChanges()
+	return Warden.GetOwnerChanges(self)
+end
+
 --- // setters // ---
 
 -- set an entity's owner to a player
@@ -170,17 +183,12 @@ function Warden.SetOwner(entOrID, plyOrID)
 
 	local steamID = Warden.PossibleSteamID(plyOrID)
 	if not steamID then
-		if IsValid(plyOrID) then
+		if IsValid(plyOrID) or type(plyOrID) == "number" then
 			Warden.ReplaceOwner(entOrID, plyOrID)
 			return
 		end
 
 		Warden.ClearOwner(entID)
-		return
-	end
-
-	if steamID == "World" then
-		Warden.SetOwnerWorld(entID)
 		return
 	end
 
@@ -191,9 +199,18 @@ function Warden.SetOwner(entOrID, plyOrID)
 
 	Warden.ClearOwner(entID, true)
 
-	Warden.Ownership[entID] = {
-		steamID = steamID
-	}
+	if Warden.Ownership[entID] then
+		Warden.Ownership[entID].steamID = steamID
+		Warden.Ownership[entID].changes = Warden.Ownership[entID].changes or 1
+		Warden.Ownership[entID].changes = Warden.Ownership[entID].changes + 1
+	else
+		Warden.Ownership[entID] = { steamID = steamID }
+
+		local ent = Entity(entID)
+		if IsValid(ent) then
+			Warden.Ownership[entID].changes = ent.WardenOwnerChanges
+		end
+	end
 
 	Warden.Players[steamID] = Warden.Players[steamID] or {}
 	Warden.Players[steamID][entID] = true
@@ -224,7 +241,14 @@ function Warden.ClearOwner(entOrID, noNetwork)
 			end
 		end
 
-		Warden.Ownership[id] = nil
+		if Warden.Ownership[id] then
+			local ent = Entity(id)
+			if IsValid(ent) then
+				ent.WardenOwnerChanges = Warden.Ownership[id].changes
+			end
+
+			Warden.Ownership[id] = nil
+		end
 	end
 
 	if not noNetwork then
@@ -238,28 +262,7 @@ end
 -- set the owner of an entity as the world
 -- id to entity must be valid serverside
 function Warden.SetOwnerWorld(entOrID)
-	local id = Warden.PossibleEntIndex(entOrID)
-	if not id then return end
-
-	if SERVER and not IsValid(Entity(id)) then
-		Warden.ClearOwner(id)
-		return
-	end
-
-	Warden.ClearOwner(id, true)
-
-	Warden.Ownership[id] = {
-		steamID = "World",
-	}
-
-	Warden.Players["World"] = Warden.Players["World"] or {}
-	Warden.Players["World"][id] = true
-
-	Warden.UpdateOwnerData("World", id)
-
-	if SERVER then
-		Entity(id):CallOnRemove("WardenOwnership", Warden.ClearOwner)
-	end
+	Warden.SetOwner(entOrID, "World")
 end
 function ENTITY:WardenSetOwnerWorld()
 	Warden.SetOwnerWorld(self)
