@@ -199,17 +199,12 @@ function Warden.SetOwner(entOrID, plyOrID)
 
 	Warden.ClearOwner(entID, true)
 
-	if Warden.Ownership[entID] then
-		Warden.Ownership[entID].steamID = steamID
-		Warden.Ownership[entID].changes = Warden.Ownership[entID].changes or 1
-		Warden.Ownership[entID].changes = Warden.Ownership[entID].changes + 1
-	else
-		Warden.Ownership[entID] = { steamID = steamID }
+	Warden.Ownership[entID] = { steamID = steamID }
 
-		local ent = Entity(entID)
-		if IsValid(ent) then
-			Warden.Ownership[entID].changes = ent.WardenOwnerChanges
-		end
+	local ent = Entity(entID)
+	if IsValid(ent) then
+		Warden.Ownership[entID].changes = ent.WardenOwnerChanges
+		ent.WardenOwnerChanges = nil
 	end
 
 	Warden.Players[steamID] = Warden.Players[steamID] or {}
