@@ -9,19 +9,13 @@ function Warden.SetupPlayer(plyOrID)
 	end
 end
 
-Warden.SteamIDMap = Warden.SteamIDMap or {}
+local USE_EXCEPTIONS = {
+	mediaplayer_tv = true,
+	mediaplayer_tv_ext = true
+}
 
-function Warden.GetPlayerFromSteamID(steamid)
-	if not Warden.SteamIDMap[steamid] then
-		for _, ply in pairs(player.GetAll()) do
-			Warden.SteamIDMap[ply:SteamID()] = ply
-		end
-	end
-	return Warden.SteamIDMap[steamid]
-end
-
-function Warden.PlayerIsDisconnected(steamid)
-	local ply = Warden.GetPlayerFromSteamID(steamid)
+function Warden.PlayerIsDisconnected(steamID)
+	local ply = Warden.GetPlayerFromSteamID(steamID)
 	return not IsValid(ply)
 end
 
@@ -127,9 +121,9 @@ function Warden.HasPermissionGlobal(ent, permission)
 	return Warden.Permissions[ply:SteamID()][permission].global or false
 end
 
-local plyMeta = FindMetaTable("Player")
+local PLAYER = FindMetaTable("Player")
 
-function plyMeta:WardenGetAdminLevel()
+function PLAYER:WardenGetAdminLevel()
 	if GetConVar("warden_admin_level_needs_admin"):GetBool() and not self:IsAdmin() then
 		return 0
 	end
@@ -142,7 +136,7 @@ function plyMeta:WardenGetAdminLevel()
 	return adminLevel
 end
 
-function plyMeta:WardenEnsureSetup()
+function PLAYER:WardenEnsureSetup()
 	if not Warden.Permissions[self:SteamID()] then
 		Warden.SetupPlayer(self)
 	end
@@ -190,128 +184,26 @@ if SERVER then
 		Warden.SetupPlayer(ply)
 		net.Start("WardenInitialize")
 		net.WriteUInt(#Warden.Permissions, 8)
-		for steamid, perms in pairs(Warden.Permissions) do
-			net.WriteString(steamid)
+		for steamID, perms in pairs(Warden.Permissions) do
+			net.WriteString(steamID)
 			net.WriteUInt(#perms, 8)
-			for permisson, ssteamids in pairs(perms) do
+			for permisson, ssteamIDs in pairs(perms) do
 				net.WriteUInt(permisson, 8)
 
 				local toSend = {}
-				for ssteamid, granted in pairs(ssteamids) do
+				for ssteamID, granted in pairs(ssteamIDs) do
 					if granted then
-						table.insert(toSend, ssteamid)
+						table.insert(toSend, ssteamID)
 					end
 				end
 				net.WriteUInt(#toSend, 8)
-				for _, ssteamid in ipairs(toSend) do
-					net.WriteString(ssteamid)
+				for _, ssteamID in ipairs(toSend) do
+					net.WriteString(ssteamID)
 				end
 			end
 		end
 		net.Send(ply)
 	end)
-
-	Warden.Ownership = Warden.Ownership or {}
-	Warden.Players = Warden.Players or {}
-
-	function Warden.SetOwner(ent, ply)
-		if not IsValid(ent) or not IsValid(ply) then
-			return
-		end
-
-		local index = ent:EntIndex()
-		local steamid = ply:SteamID()
-
-		-- Cleanup original ownership if has one
-		if Warden.Ownership[index] then
-			local lastOwner = Warden.Ownership[index]
-
-			if Warden.Players[lastOwner.steamid] then
-				Warden.Players[lastOwner.steamid][index] = nil
-			end
-		end
-
-		Warden.Ownership[index] = {
-			ent = ent,
-			owner = ply,
-			steamid = steamid,
-		}
-
-		if not Warden.Players[steamid] then
-			Warden.Players[steamid] = {}
-		end
-
-		Warden.Players[steamid][index] = true
-
-		ent:SetNWString("Owner", ply:Nick())
-		ent:SetNWString("OwnerID", ply:SteamID())
-		ent:SetNWEntity("OwnerEnt", ply)
-	end
-
-	function Warden.ReplaceOwner(from, to)
-		if not IsValid(from) or from:IsPlayer() then return end
-		if not IsValid(to) or to:IsPlayer() then return end
-
-		local id = Warden.Ownership[from:EntIndex()]
-		if not id then return end -- is ownerless
-
-		Warden.SetOwner(to, id.owner)
-	end
-
-	function Warden.ClearOwner(ent)
-		if not IsValid(ent) then return end
-
-		local index = ent:EntIndex()
-		local ownership = Warden.Ownership[index]
-		if ownership then
-			if Warden.Players[ownership.steamid] then
-				Warden.Players[ownership.steamid][index] = nil
-			end
-
-			Warden.Ownership[index] = nil
-		end
-
-		ent:SetNWString("Owner", nil)
-		ent:SetNWString("OwnerID", nil)
-		ent:SetNWEntity("OwnerEnt", nil)
-	end
-
-	function Warden.GetOwner(ent)
-		if not IsValid(ent) then
-			if ent == nil or not ent.IsWorld then return end
-			if ent:IsWorld() then return ent end
-			return
-		end
-
-		if ent:IsPlayer() then return ent end
-
-		local ownership = Warden.Ownership[ent:EntIndex()]
-		return ownership and ownership.owner
-	end
-
-	function Warden.SetOwnerWorld(ent)
-		local world = game.GetWorld()
-		local index = ent:EntIndex()
-
-		-- Cleanup original ownership if has one
-		if Warden.Ownership[index] then
-			local lastOwner = Warden.Ownership[index]
-
-			if Warden.Players[lastOwner.steamid] then
-				Warden.Players[lastOwner.steamid][index] = nil
-			end
-		end
-
-		Warden.Ownership[index] = {
-			ent = ent,
-			owner = world,
-			steamid = "World",
-		}
-
-		ent:SetNWString("Owner", "World")
-		ent:SetNWString("OwnerID", "World")
-		ent:SetNWEntity("OwnerEnt", world)
-	end
 
 	local function getInternalOwner(ent)
 		local owner = ent:GetInternalVariable("m_hOwnerEntity") or NULL
@@ -335,10 +227,8 @@ if SERVER then
 	end)
 
 	hook.Add("PlayerInitialSpawn", "Warden", function(ply)
-		if Warden.Players[ply:SteamID()] then
-			for entIndex, _ in pairs(Warden.Players[ply:SteamID()]) do
-				Warden.SetOwner(Entity(entIndex), ply)
-			end
+		for entIndex, _ in pairs(Warden.GetPlayerTable(ply)) do
+			Warden.SetOwner(Entity(entIndex), ply)
 		end
 
 		timer.Remove("WardenCleanup#" .. ply:SteamID())
@@ -421,90 +311,58 @@ if SERVER then
 		end
 	end
 
-	function Warden.FreezeEntities(steamid)
-		local tbl = Warden.Players[steamid]
+	function Warden.FreezeEntities(steamID)
 		local count = 0
-		if tbl then
-			for entIndex, _ in pairs(tbl) do
-				local ent = Entity(entIndex)
-				for i = 0, ent:GetPhysicsObjectCount() - 1 do
-					local phys = ent:GetPhysicsObjectNum(i)
-					phys:EnableMotion(false)
-				end
-				count = count + 1
-			end
-		end
-		hook.Run("WardenFreeze", steamid, count)
-	end
-
-	function Warden.CleanupEntities(steamid)
-		local tbl = Warden.Players[steamid]
-		local count = 0
-		if tbl then
-			for entIndex, _ in pairs(tbl) do
-				Entity(entIndex):Remove()
+		for _, ent in ipairs(Warden.GetOwnedEntities(steamID)) do
+			for i = 0, ent:GetPhysicsObjectCount() - 1 do
+				local phys = ent:GetPhysicsObjectNum(i)
+				phys:EnableMotion(false)
 			end
 			count = count + 1
 		end
+		hook.Run("WardenFreeze", steamID, count)
+	end
 
-		hook.Run("WardenCleanup", steamid, count)
+	function Warden.CleanupEntities(steamID)
+		local count = 0
+		for _, ent in ipairs(Warden.GetOwnedEntities(steamID)) do
+			ent:Remove()
+		end
+		count = count + 1
+
+		hook.Run("WardenCleanup", steamID, count)
 		return count
 	end
 
 	function Warden.FreezeDisconnected()
-		for steamid, _ in pairs(Warden.Players) do
-			if Warden.PlayerIsDisconnected(steamid) then
-				Warden.FreezeEntities(steamid)
+		for steamID, _ in pairs(Warden.GetPlayerTable()) do
+			if Warden.PlayerIsDisconnected(steamID) then
+				Warden.FreezeEntities(steamID)
 			end
 		end
 	end
 
 	function Warden.CleanupDisconnected()
-		for steamid, _ in pairs(Warden.Players) do
-			if Warden.PlayerIsDisconnected(steamid) then
-				Warden.CleanupEntities(steamid)
+		for steamID, _ in pairs(Warden.GetPlayerTable()) do
+			if Warden.PlayerIsDisconnected(steamID) then
+				Warden.CleanupEntities(steamID)
 			end
 		end
-	end
-
-	function Warden.GetOwnedEntities(steamid)
-		local tbl = Warden.Players[steamid]
-		local ents = {}
-		if tbl then
-			for entIndex, _ in pairs(tbl) do
-				table.insert(ents, Entity(entIndex))
-			end
-		end
-		return ents
-	end
-
-	function Warden.GetOwnedEntitiesByClass(steamid, class)
-		local tbl = Warden.Players[steamid]
-		local ents = {}
-		if tbl then
-			for entIndex, _ in pairs(tbl) do
-				local entity = Entity(entIndex)
-				if entity:GetClass() == class then
-					table.insert(ents, entity)
-				end
-			end
-		end
-		return ents
 	end
 
 	-- Detours
 
-	if plyMeta.AddCount then
-		Warden.BackupPlyAddCount = Warden.BackupPlyAddCount or plyMeta.AddCount
-		function plyMeta:AddCount(enttype, ent)
+	if PLAYER.AddCount then
+		Warden.BackupPlyAddCount = Warden.BackupPlyAddCount or PLAYER.AddCount
+		function PLAYER:AddCount(enttype, ent)
 			Warden.SetOwner(ent, self)
 			Warden.BackupPlyAddCount(self, enttype, ent)
 		end
 	end
 
-	if plyMeta.AddCleanup then
-		Warden.BackupPlyAddCleanup = Warden.BackupPlyAddCleanup or plyMeta.AddCleanup
-		function plyMeta:AddCleanup(enttype, ent)
+	if PLAYER.AddCleanup then
+		Warden.BackupPlyAddCleanup = Warden.BackupPlyAddCleanup or PLAYER.AddCleanup
+		function PLAYER:AddCleanup(enttype, ent)
 			Warden.SetOwner(ent, self)
 			Warden.BackupPlyAddCleanup(self, enttype, ent)
 		end
@@ -591,7 +449,7 @@ if SERVER then
 		end
 	end
 
-	function plyMeta:WardenSetAdminLevel(level)
+	function PLAYER:WardenSetAdminLevel(level)
 		if type(level) ~= "number" and type(level) ~= "nil" then
 			error("admin level must be a number or nil", 2)
 		end
@@ -620,6 +478,8 @@ if SERVER then
 	end)
 
 	hook.Add("PlayerUse", "Warden", function(ply, ent)
+		if USE_EXCEPTIONS[ent:GetClass()] or ent.AlwaysUsable then return end
+
 		if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_USE) then
 			return false
 		end
@@ -637,8 +497,9 @@ if SERVER then
 
 		-- fix fire damage
 		if ValidAttacker and attacker:GetClass() == "entityflame" and IsValid(attacker:GetParent()) then
-			attacker = attacker:GetParent():CPPIGetOwner()
-			if attacker ~= nil then
+			local newAttacker = attacker:GetParent():CPPIGetOwner()
+			if Warden.IsValidOwner(newAttacker) then
+				attacker = newAttacker
 				dmg:SetAttacker(attacker)
 			end
 		end
@@ -686,20 +547,20 @@ if SERVER then
 	end)
 
 	hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
-		local steamid = data.networkid
-		Warden.Permissions[steamid] = nil
+		local steamID = data.networkid
+		Warden.Permissions[steamID] = nil
 
 		if GetConVar("warden_freeze_disconnect"):GetBool() then
-			Warden.FreezeEntities(steamid)
+			Warden.FreezeEntities(steamID)
 		end
 
 		if GetConVar("warden_cleanup_disconnect"):GetBool() then
 			local time = GetConVar("warden_cleanup_time"):GetInt()
 			local name = data.name
 
-			timer.Create("WardenCleanup#" .. steamid, time, 1, function()
-				local count = Warden.CleanupEntities(steamid)
-				hook.Run("WardenNaturalCleanup", name, time, steamid, count)
+			timer.Create("WardenCleanup#" .. steamID, time, 1, function()
+				local count = Warden.CleanupEntities(steamID)
+				hook.Run("WardenNaturalCleanup", name, time, steamID, count)
 			end)
 		end
 	end)
@@ -736,39 +597,6 @@ end)
 net.Receive("WardenAdminLevel", function()
 	Warden.LocalAdminLevel = net.ReadUInt(8)
 end)
-
-function Warden.GetOwnedEntities(steamid)
-	local ents = {}
-	for _, ent in ipairs(ents.GetAll()) do
-		if ent:GetNWString("OwnerID", "") == steamid then
-			table.insert(ents, ent)
-		end
-	end
-	return ents
-end
-
-function Warden.GetOwnedEntitiesByClass(steamid, class)
-	local ents = {}
-	for _, ent in ipairs(ents.FindByClass(class)) do
-		if ent:GetNWString("OwnerID", "") == steamid then
-			table.insert(ents, ent)
-		end
-	end
-	return ents
-end
-
--- Clientside permission setting
-function Warden.GetOwner(ent)
-	if not IsValid(ent) then
-		if ent == nil or not ent.IsWorld then return end
-		if ent:IsWorld() then return ent end
-		return
-	end
-
-	if ent:IsPlayer() then return ent end
-
-	return ent:GetNWEntity("OwnerEnt")
-end
 
 net.Receive("WardenUpdatePermission", function()
 	local granting = net.ReadBool()
@@ -813,7 +641,7 @@ function Warden.RevokePermission(receiver, permission)
 end
 
 hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
-	local steamid = data.networkid
-	Warden.Permissions[steamid] = nil
+	local steamID = data.networkid
+	Warden.Permissions[steamID] = nil
 end)
 
