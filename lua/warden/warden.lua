@@ -16,7 +16,7 @@ local USE_EXCEPTIONS = {
 
 function Warden.PlayerIsDisconnected(steamID)
 	local ply = Warden.GetPlayerFromSteamID(steamID)
-	return not IsValid(ply)
+	return not Warden.IsValidOwner(ply)
 end
 
 local function worldCheck(permission)
