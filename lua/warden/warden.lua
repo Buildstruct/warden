@@ -44,9 +44,10 @@ function Warden.CheckPermission(receiver, granter, permission)
 
 	receiver = Warden.GetOwner(receiver)
 	granter = Warden.GetOwner(granter)
-	if not receiver or not granter then return false end
 
+	if not receiver then return false end
 	if adminCheck(receiver, permission) then return true end
+	if not granter then return false end
 
 	if (receiver.IsWorld and receiver:IsWorld()) or (granter.IsWorld and granter:IsWorld()) then
 		local wOverride = hook.Run("WardenCheckPermissionWorld", receiver, granter, permission)
