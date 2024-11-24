@@ -56,7 +56,7 @@ function Warden.CheckPermission(receiver, granter, permission)
 		return worldCheck(permission)
 	end
 
-	if not IsValid(receiver) or not IsValid(granter) then return end
+	if not IsValid(receiver) or not IsValid(granter) then return false end
 
 	-- both receiver and granter are confirmed players
 
