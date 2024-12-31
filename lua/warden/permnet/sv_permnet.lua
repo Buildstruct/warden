@@ -34,7 +34,7 @@ end)
 
 net.Receive("WardenUpdatePermission", function(_, ply)
 	local permID = net.ReadUInt(8)
-	if not Warden.PermissionList[permID] then return end
+	if not Warden.GetPermission(permID) then return end
 
 	local granting = net.ReadBool()
 	if net.ReadBool() then
@@ -74,18 +74,19 @@ function Warden.GrantPermission(granter, receiver, keyOrID)
 	granter:WardenEnsureSetup()
 
 	local permID = Warden.PermID(keyOrID)
+	if not permID then return end
 
 	if IsValid(receiver) and receiver:IsPlayer() then
 		if Warden.PlyPerms[granter:SteamID()][permID]["global"] then
-			hook.Run("WardenRevokePermission", granter, receiver, Warden.PermissionList[permID].id, true)
+			hook.Run("WardenRevokePermission", granter, receiver, permID, true)
 		else
-			hook.Run("WardenGrantPermission", granter, receiver, Warden.PermissionList[permID].id)
+			hook.Run("WardenGrantPermission", granter, receiver, permID)
 		end
 
 		Warden.PlyPerms[granter:SteamID()][permID][receiver:SteamID()] = true
 		networkPermission(granter, receiver, permID, true)
 	else
-		hook.Run("WardenGrantPermissionGlobal", granter, Warden.PermissionList[permID].id)
+		hook.Run("WardenGrantPermissionGlobal", granter, permID)
 		Warden.PlyPerms[granter:SteamID()][permID]["global"] = true
 		networkPermission(granter, nil, permID, true)
 	end
@@ -96,18 +97,19 @@ function Warden.RevokePermission(revoker, receiver, keyOrID)
 	revoker:WardenEnsureSetup()
 
 	local permID = Warden.PermID(keyOrID)
+	if not permID then return end
 
 	if IsValid(receiver) and receiver:IsPlayer() then
 		if Warden.PlyPerms[revoker:SteamID()][permID]["global"] then
-			hook.Run("WardenGrantPermission", revoker, receiver, Warden.PermissionList[permID].id, true)
+			hook.Run("WardenGrantPermission", revoker, receiver, permID, true)
 		else
-			hook.Run("WardenRevokePermission", revoker, receiver, Warden.PermissionList[permID].id)
+			hook.Run("WardenRevokePermission", revoker, receiver, permID)
 		end
 
 		Warden.PlyPerms[revoker:SteamID()][permID][receiver:SteamID()] = nil
 		networkPermission(revoker, receiver, permID, false)
 	else
-		hook.Run("WardenRevokePermissionGlobal", revoker, Warden.PermissionList[permID].id)
+		hook.Run("WardenRevokePermissionGlobal", revoker, permID)
 		Warden.PlyPerms[revoker:SteamID()][permID]["global"] = nil
 		networkPermission(revoker, nil, permID, false)
 	end

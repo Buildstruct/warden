@@ -28,6 +28,7 @@ function Warden.RegisterPermission(key, tbl)
 	tbl._WorldCVar = CreateConVar("warden_perm_" .. key .. "_world_access", -1, FCVAR_REPLICATED, "Set whether the world has this permission", -1, 1)
 	tbl._EnabledCVar = CreateConVar("warden_perm_" .. key .. "_enabled", 1, FCVAR_REPLICATED, "Set whether this permission is enabled", 0, 1)
 	tbl.ID = id
+	tbl.KEY = key
 
 	return id
 end
@@ -159,12 +160,12 @@ end
 
 -- // default permission definitions // --
 
-Warden.PERMISSION_ALL     = Warden.RegisterPermissionSimple("whitelist", "Whitelist", "Grants full permissions.", 3)
-Warden.PERMISSION_PHYSGUN = Warden.RegisterPermissionSimple("physgun", "Physgun", "Allows users to pickup your stuff with the physgun.", 1, nil, "bs/aegis_physgun.png", "icon16/flag_blue.png")
-Warden.PERMISSION_GRAVGUN = Warden.RegisterPermissionSimple("gravgun", "Gravgun", "Allows users to pickup your stuff with the gravgun.", 1, true, "bs/aegis_gravgun.png", "icon16/flag_orange.png")
-Warden.PERMISSION_TOOL    = Warden.RegisterPermissionSimple("tool", "Toolgun", "Allows users to use the toogun on your stuff.", 2, nil, "bs/aegis_tool.png", "icon16/cup.png")
-Warden.PERMISSION_USE     = Warden.RegisterPermissionSimple("use", "Use (E)", "Allows users to sit in your seats, use your wire buttons, etc.", 1, true, "bs/aegis_use.png", "icon16/mouse.png")
-Warden.PERMISSION_DAMAGE  = Warden.RegisterPermissionSimple("damage", "Damage", "Allows users to damage you and your stuff (excluding ACF).", 2, true, "bs/aegis_damage.png", "icon16/sport_raquet.png")
+Warden.PERMISSION_ALL     = Warden.RegisterPermissionSimple("whitelist", "whitelist", "Grants full permissions.", 3)
+Warden.PERMISSION_PHYSGUN = Warden.RegisterPermissionSimple("physgun", "physgun", "Allows users to pickup your stuff with the physgun.", 1, nil, "bs/aegis_physgun.png", "icon16/flag_blue.png")
+Warden.PERMISSION_GRAVGUN = Warden.RegisterPermissionSimple("gravgun", "gravgun", "Allows users to pickup your stuff with the gravgun.", 1, true, "bs/aegis_gravgun.png", "icon16/flag_orange.png")
+Warden.PERMISSION_TOOL    = Warden.RegisterPermissionSimple("tool", "toolgun", "Allows users to use the toogun on your stuff.", 2, nil, "bs/aegis_tool.png", "icon16/cup.png")
+Warden.PERMISSION_USE     = Warden.RegisterPermissionSimple("use", "use", "Allows users to sit in your seats, use your wire buttons, etc.", 1, true, "bs/aegis_use.png", "icon16/mouse.png")
+Warden.PERMISSION_DAMAGE  = Warden.RegisterPermissionSimple("damage", "damage", "Allows users to damage you and your stuff (excluding ACF).", 2, true, "bs/aegis_damage.png", "icon16/sport_raquet.png")
 
 -- // helpers and global funcs // --
 
@@ -190,8 +191,10 @@ function Warden.HasPermissionLocal(receiver, granter, keyOrID)
 	granter = Warden.GetOwner(granter)
 	if not IsValid(receiver) or not IsValid(granter) then return false end
 
+	granter:WardenEnsureSetup()
+
 	local id = Warden.PermID(keyOrID)
-	local permList = Warden.Permissions[granter:SteamID()][id]
+	local permList = Warden.PlyPerms[granter:SteamID()][id]
 
 	return permList and permList[receiver:SteamID()] or false
 end
@@ -201,8 +204,10 @@ function Warden.HasPermissionGlobal(ent, keyOrID)
 	local ply = Warden.GetOwner(ent)
 	if not IsValid(ply) then return false end
 
+	ply:WardenEnsureSetup()
+
 	local id = Warden.PermID(keyOrID)
-	local permList = Warden.Permissions[ply:SteamID()][id]
+	local permList = Warden.PlyPerms[ply:SteamID()][id]
 
 	return permList and permList.global or false
 end
@@ -212,9 +217,11 @@ function Warden.GetPermStatus(receiver, granter, keyOrID)
 	receiver = Warden.GetOwner(receiver)
 	granter = Warden.GetOwner(granter)
 
-	local id = Warden.PermID(keyOrID)
+	granter:WardenEnsureSetup()
 
-	local permList = Warden.Permissions[granter:SteamID()][id]
+	local id = Warden.PermID(keyOrID)
+	local permList = Warden.PlyPerms[granter:SteamID()][id]
+
 	if not permList then return false end
 
 	local global = permList.global or false
