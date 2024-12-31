@@ -3,6 +3,10 @@ local USE_EXCEPTIONS = {
 	mediaplayer_tv_ext = true
 }
 
+local freezeCvar = CreateConVar("warden_freeze_disconnect", 1, nil, "Freeze owned entities on player disconnect", 0, 1)
+local cleanupCvar = CreateConVar("warden_cleanup_disconnect", 1, nil, "Cleanup owned entities on player disconnect", 0, 1)
+local cleanupTimeCvar = CreateConVar("warden_cleanup_time", 600, nil, "Time in seconds until cleanup after player disconnect", 0)
+
 hook.Add("GravGunPickupAllowed", "Warden", function(ply, ent)
 	if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN) then
 		return false
@@ -83,12 +87,12 @@ hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
 	local steamID = data.networkid
 	Warden.PlyPerms[steamID] = nil
 
-	if GetConVar("warden_freeze_disconnect"):GetBool() then
+	if freezeCvar:GetBool() then
 		Warden.FreezeEntities(steamID)
 	end
 
-	if GetConVar("warden_cleanup_disconnect"):GetBool() then
-		local time = GetConVar("warden_cleanup_time"):GetInt()
+	if cleanupCvar:GetBool() then
+		local time = cleanupTimeCvar:GetInt()
 		local name = data.name
 
 		timer.Create("WardenCleanup#" .. steamID, time, 1, function()

@@ -2,6 +2,8 @@ Warden.Permissions = {}
 Warden.PermissionKeys = {}
 Warden.PlyPerms = Warden.PlyPerms or {}
 
+local targetBotsCvar = CreateConVar("warden_always_target_bots", 1, FCVAR_REPLICATED, "If true, bots always have all their permissions overridden.", 0, 1)
+
 local permFuncs = {}
 local permMeta = { __index = permFuncs }
 
@@ -262,7 +264,7 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 	local override = hook.Run("WardenCheckPermission", receiver, granter, Warden.PermKey(keyOrID))
 	if override ~= nil then return override end
 
-	if granter:IsBot() and GetConVar("warden_always_target_bots"):GetBool() then
+	if granter:IsBot() and targetBotsCvar:GetBool() then
 		return true
 	end
 

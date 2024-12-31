@@ -1,8 +1,9 @@
 local PLAYER = FindMetaTable("Player")
 
 local adminCvar = CreateConVar("warden_admin_level_needs_admin", 1, FCVAR_REPLICATED, "If true, admin level *only* works for admins.", 0, 1)
-local adminCvarDefault = CreateConVar("warden_default_admin_level", 0, FCVAR_REPLICATED, "Set the default permission override level for admins.", 0, 99)
+local adminDefaultCvar = CreateConVar("warden_default_admin_level", 0, FCVAR_REPLICATED, "Set the default permission override level for admins.", 0, 99)
 
+-- get what admin level a player has
 function PLAYER:WardenGetAdminLevel()
 	if adminCvar:GetBool() and not self:IsAdmin() then
 		return 0
@@ -10,7 +11,7 @@ function PLAYER:WardenGetAdminLevel()
 
 	local adminLevel = SERVER and self.WardenAdminLevel or Warden.LocalAdminLevel
 	if not adminLevel then
-		adminLevel = adminCvarDefault:GetInt()
+		adminLevel = adminDefaultCvar:GetInt()
 	end
 
 	return adminLevel
