@@ -1,3 +1,5 @@
+local PLAYER = FindMetaTable("Player")
+
 local function getInternalOwner(ent)
 	local owner = ent:GetInternalVariable("m_hOwnerEntity") or NULL
 	if owner == NULL then owner = ent:GetInternalVariable("m_hOwner") or NULL end

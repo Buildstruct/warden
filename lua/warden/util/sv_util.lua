@@ -1,3 +1,5 @@
+local PLAYER = FindMetaTable("Player")
+
 function Warden.FreezeEntities(steamID)
 	local count = 0
 	for _, ent in ipairs(Warden.GetOwnedEntities(steamID)) do
