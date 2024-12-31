@@ -18,7 +18,7 @@ net.Receive("WardenInitialize", function()
 				local receiver = net.ReadString()
 
 				Warden.SetupPlayer(granter)
-				Warden.Permissions[granter][permission][receiver] = true
+				Warden.PlyPerms[granter][permission][receiver] = true
 			end
 		end
 	end
@@ -36,11 +36,11 @@ net.Receive("WardenUpdatePermission", function()
 	granter:WardenEnsureSetup()
 
 	if net.ReadBool() then
-		Warden.Permissions[granter:SteamID()][permission]["global"] = granting
+		Warden.PlyPerms[granter:SteamID()][permission]["global"] = granting
 	else
 		local receiver = net.ReadEntity()
 		if IsValid(receiver) and receiver:IsPlayer() then
-			Warden.Permissions[granter:SteamID()][permission][receiver:SteamID()] = granting
+			Warden.PlyPerms[granter:SteamID()][permission][receiver:SteamID()] = granting
 		end
 	end
 end)
@@ -73,6 +73,6 @@ end
 gameevent.Listen("player_disconnect")
 hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
 	local steamID = data.networkid
-	Warden.Permissions[steamID] = nil
+	Warden.PlyPerms[steamID] = nil
 end)
 

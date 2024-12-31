@@ -17,7 +17,7 @@ function PLAYER:WardenGetAdminLevel()
 end
 
 function PLAYER:WardenEnsureSetup()
-	if not Warden.Permissions[self:SteamID()] then
+	if not Warden.PlyPerms[self:SteamID()] then
 		Warden.SetupPlayer(self)
 	end
 end
@@ -27,9 +27,9 @@ function Warden.SetupPlayer(plyOrID)
 		plyOrID = plyOrID:SteamID()
 	end
 
-	Warden.Permissions[plyOrID] = {}
-	for _, id in pairs(Warden.PermissionIDs) do
-		Warden.Permissions[plyOrID][id] = { global = false }
+	Warden.PlyPerms[plyOrID] = {}
+	for _, v in pairs(Warden.Permissions) do
+		Warden.PlyPerms[plyOrID][v.ID] = { global = false }
 	end
 end
 
