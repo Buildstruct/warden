@@ -1,5 +1,5 @@
 Warden.Permissions = {}
-Warden.PermissionKeys = {}
+Warden.PermissionIDs = {}
 Warden.PlyPerms = Warden.PlyPerms or {}
 
 local targetBotsCvar = CreateConVar("warden_always_target_bots", 1, FCVAR_REPLICATED, "If true, bots always have all their permissions overridden.", 0, 1)
@@ -21,8 +21,8 @@ end
 function Warden.RegisterPermission(key, tbl)
 	setmetatable(tbl, permMeta) -- in case it hasn't been set already
 
-	Warden.Permissions[key] = tbl
-	local id = table.insert(Warden.PermissionKeys, key)
+	local id = table.insert(Warden.Permissions, tbl)
+	Warden.PermissionIDs[key] = id
 
 	tbl._AdminCVar = CreateConVar("warden_perm_" .. key .. "_admin_level", -1, FCVAR_REPLICATED, "Set the admin level needed for admins to override this permission.", -1, 99)
 	tbl._WorldCVar = CreateConVar("warden_perm_" .. key .. "_world_access", -1, FCVAR_REPLICATED, "Set whether the world has this permission", -1, 1)
@@ -30,7 +30,7 @@ function Warden.RegisterPermission(key, tbl)
 	tbl.ID = id
 	tbl.KEY = key
 
-	return id
+	return id, tbl
 end
 
 -- same as above but do all of the important stuff at once
@@ -169,20 +169,32 @@ Warden.PERMISSION_DAMAGE  = Warden.RegisterPermissionSimple("damage", "damage", 
 
 -- // helpers and global funcs // --
 
--- collapse a keyOrID value into just a key for permissions
-function Warden.PermKey(keyOrID)
-	local key = keyOrID
-	if type(keyOrID) == "number" then
-		key = Warden.PermissionKeys[keyOrID]
+-- collapse a keyOrID value into just an id for permissions
+-- force: get the id even if it's disabled
+function Warden.PermID(keyOrID, force)
+	local permID = keyOrID
+	if type(keyOrID) == "string" then
+		permID = Warden.PermissionIDs[keyOrID]
 	end
 
-	return key
+	local perm = Warden.Permissions[permID]
+	if perm and (force or perm:GetEnabled()) then
+		return permID
+	end
 end
 
--- collapse a keyOrID value into just an id for permissions
-function Warden.PermID(keyOrID)
-	local perm = Warden.GetPermission(keyOrID)
-	return perm and perm.ID
+-- get a permission object from the key or id
+-- force: get the permission even if it's disabled
+function Warden.GetPermission(keyOrID, force)
+	local permID = Warden.PermID(keyOrID, force)
+	return permID and Warden.Permissions[permID]
+end
+
+-- collapse a keyOrID value into just a key for permissions
+-- force: get the key even if it's disabled
+function Warden.PermKey(keyOrID, force)
+	local perm = Warden.GetPermission(keyOrID, force)
+	return perm and perm.KEY
 end
 
 -- whether two ents have a local perm
@@ -230,25 +242,16 @@ function Warden.GetPermStatus(receiver, granter, keyOrID)
 	return global ~= lcl
 end
 
--- get a permission object from the key or id
--- force: get the permission even if it's disabled
-function Warden.GetPermission(keyOrID, force)
-	local key = Warden.PermKey(keyOrID)
-	if not key then return end
-
-	local perm = Warden.Permissions[key]
-	if perm and (force or perm:GetEnabled()) then
-		return perm
-	end
-end
-
 Warden.GetPerm = Warden.GetPermission
 
 -- check if something has the permission to affect another thing
 -- keyOrID is the key or id of a permission
 function Warden.CheckPermission(receiver, granter, keyOrID)
-	local perm = Warden.GetPermission(keyOrID)
+	local perm = Warden.GetPermission(keyOrID, true)
 	if not perm then return true end
+	if not perm:GetEnabled() then
+		return perm.ID ~= Warden.PERMISSION_ALL
+	end
 
 	receiver = Warden.GetOwner(receiver)
 	granter = Warden.GetOwner(granter)
@@ -292,7 +295,7 @@ Warden.HasPermission = Warden.CheckPermission
 function Warden.GetAllPermissions(receiver, granter)
 	if not receiver and not granter then
 		local perms = {}
-		for k, v in ipairs(Warden.Permissions) do
+		for k, v in pairs(Warden.Permissions) do
 			if v:GetEnabled() then
 				perms[k] = v
 			end
@@ -308,7 +311,7 @@ function Warden.GetAllPermissions(receiver, granter)
 
 	local perms = {}
 
-	for k, v in ipairs(Warden.Permissions) do
+	for k, v in pairs(Warden.Permissions) do
 		if v:GetEnabled() and Warden.CheckPermission(receiver, granter, k) then
 			perms[k] = v
 		end

@@ -70,6 +70,15 @@ function Warden.RevokePermission(receiver, keyOrID)
 	networkPermission(receiver, permID, false)
 end
 
+-- determine whether to grant or revoke based on a bool
+function Warden.PermissionRequest(ply, val, keyOrID)
+	if val then
+		Warden.GrantPermission(ply, keyOrID)
+	else
+		Warden.RevokePermission(ply, keyOrID)
+	end
+end
+
 gameevent.Listen("player_disconnect")
 hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
 	local steamID = data.networkid
