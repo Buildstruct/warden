@@ -48,3 +48,9 @@ function PLAYER:WardenSetAdminLevel(level)
 		net.WriteUInt(level, 8)
 	net.Send(self)
 end
+
+net.Receive("WardenAdminLevel", function(_, ply)
+	if not ply:IsAdmin() then return end
+
+	ply:WardenSetAdminLevel(net.ReadUInt(8))
+end)
