@@ -1,22 +1,49 @@
 Warden = Warden or {}
 
-AddCSLuaFile("warden/convars.lua")
-include("warden/convars.lua")
+local function addFile(File, directory)
+	local prefix = string.lower(string.Left(File, 3))
 
-AddCSLuaFile("warden/permissions.lua")
-include("warden/permissions.lua")
-
-AddCSLuaFile("warden/warden.lua")
-include("warden/warden.lua")
-
-AddCSLuaFile("warden/cppi.lua")
-include("warden/cppi.lua")
-
-AddCSLuaFile("warden/ownership.lua")
-include("warden/ownership.lua")
-
-AddCSLuaFile("warden/entinfo.lua")
-if CLIENT then
-    include("warden/entinfo.lua")
+	if SERVER and prefix == "sv_" then
+		--include server
+		include(directory .. File)
+	elseif prefix == "sh_" then
+		--include server and add to client
+		if SERVER then
+			AddCSLuaFile(directory .. File)
+		end
+		include(directory .. File)
+	elseif prefix == "cl_" then
+		--add to client and include in client
+		if SERVER then
+			AddCSLuaFile(directory .. File)
+		elseif CLIENT then
+			include(directory .. File)
+		end
+	end
 end
 
+--load directories
+local includeDir
+includeDir = function(directory)
+	directory = directory .. "/"
+
+	--finds files and folders in the directory
+	local files, directories = file.Find(directory .. "*", "LUA")
+
+	--for each file, add the file
+	for _, v in ipairs(files) do
+		if string.EndsWith(v, ".lua") then
+			addFile(v, directory)
+		end
+	end
+
+	--for each directory found, do this function again
+	for _, v in ipairs(directories) do
+		includeDir(directory .. v)
+	end
+end
+
+includeDir("warden_framework")
+includeDir("warden")
+
+WARDEN_LOADED = true
