@@ -251,7 +251,7 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 	if not granter then return false end
 
 	if (receiver.IsWorld and receiver:IsWorld()) or (granter.IsWorld and granter:IsWorld()) then
-		local wOverride = hook.Run("WardenCheckPermissionWorld", receiver, granter, Warden.PermKey(keyOrID))
+		local wOverride = hook.Run("WardenCheckPermissionWorld", receiver, granter, Warden.PermID(keyOrID))
 		if wOverride ~= nil then return wOverride end
 
 		return perm:GetWorldAccess()
@@ -261,7 +261,7 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 
 	-- both receiver and granter are confirmed players
 
-	local override = hook.Run("WardenCheckPermission", receiver, granter, Warden.PermKey(keyOrID))
+	local override = hook.Run("WardenCheckPermission", receiver, granter, Warden.PermID(keyOrID))
 	if override ~= nil then return override end
 
 	if granter:IsBot() and targetBotsCvar:GetBool() then
