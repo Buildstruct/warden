@@ -8,9 +8,14 @@ local permFuncs = {}
 local permMeta = { __index = permFuncs }
 
 -- create an unregistered permission table
-function Warden.CreatePermission()
+function Warden.CreatePermission(key)
 	local tbl = {}
 	setmetatable(tbl, permMeta)
+
+	tbl._AdminCVar = CreateConVar("warden_perm_" .. key .. "_admin_level", 99, FCVAR_REPLICATED, "Set the admin level needed for admins to override this permission.", 0, 99)
+	tbl._WorldCVar = CreateConVar("warden_perm_" .. key .. "_world_access", 0, FCVAR_REPLICATED, "Set whether the world has this permission", 0, 1)
+	tbl._EnabledCVar = CreateConVar("warden_perm_" .. key .. "_enabled", 1, FCVAR_REPLICATED, "Set whether this permission is enabled", 0, 1)
+	tbl.KEY = key
 
 	return tbl
 end
@@ -18,38 +23,34 @@ end
 -- register a permission table to the server
 -- should be done immediately to allow servers to set the convars on startup
 -- try setting something under 'warden' in your lua folder to do this
-function Warden.RegisterPermission(key, tbl)
-	setmetatable(tbl, permMeta) -- in case it hasn't been set already
-
+function Warden.RegisterPermission(tbl)
 	local id = table.insert(Warden.Permissions, tbl)
-	Warden.PermissionIDs[key] = id
 
-	tbl._AdminCVar = CreateConVar("warden_perm_" .. key .. "_admin_level", -1, FCVAR_REPLICATED, "Set the admin level needed for admins to override this permission.", -1, 99)
-	tbl._WorldCVar = CreateConVar("warden_perm_" .. key .. "_world_access", -1, FCVAR_REPLICATED, "Set whether the world has this permission", -1, 1)
-	tbl._EnabledCVar = CreateConVar("warden_perm_" .. key .. "_enabled", 1, FCVAR_REPLICATED, "Set whether this permission is enabled", 0, 1)
+	Warden.PermissionIDs[tbl.KEY] = id
 	tbl.ID = id
-	tbl.KEY = key
 
 	return id, tbl
 end
 
 -- same as above but do all of the important stuff at once
 function Warden.RegisterPermissionSimple(key, name, desc, adminLevel, worldAccess, icon, iconFallback)
-	local tbl = Warden.CreatePermission()
+	local tbl = Warden.CreatePermission(key)
 
 	tbl:SetName(name)
 	tbl:SetDesc(desc)
-	tbl:SetDefaultAdminLevel(adminLevel)
-	tbl:SetDefaultWorldAccess(worldAccess)
+	tbl:SetAdminLevel(adminLevel, true)
+	tbl:SetWorldAccess(worldAccess, true)
 	tbl:SetIcon(icon, iconFallback)
 
-	return Warden.RegisterPermission(key, tbl)
+	return Warden.RegisterPermission(tbl)
 end
 
 local defaultIcon = CLIENT and Material("icon16/star.png")
 function permFuncs:SetIcon(icon, iconFallback)
-	self.IconString = icon
-	self.FallbackIconString = iconFallback
+	self.IconString = icon or self.IconString
+	self.FallbackIconString = iconFallback or self.FallbackIconString
+
+	self._Icon = nil
 end
 
 function permFuncs:GetIconString()
@@ -100,62 +101,76 @@ function permFuncs:GetDesc()
 	return self.Desc or "A permission"
 end
 
-function permFuncs:SetDefaultAdminLevel(default)
-	self.DefaultAdminLevel = default
-end
+function permFuncs:SetAdminLevel(adminLevel, doNotRequest)
+	if CLIENT then
+		if WARDEN_LOADED and not doNotRequest then
+			Warden.AdminSettingChange("perm_" .. self.KEY .. "_admin_level", adminLevel)
+		end
 
-function permFuncs:GetDefaultAdminLevel()
-	return self.DefaultAdminLevel or 1
+		return
+	end
+
+	if not self._AdminCVar then
+		return
+	end
+
+	self._AdminCVar:SetInt(adminLevel)
 end
 
 function permFuncs:GetAdminLevel()
 	if not self._AdminCVar then
-		return self:GetDefaultAdminLevel()
+		return 99
 	end
 
-	local permLevel = self._AdminCVar:GetInt()
-	if permLevel < 0 then
-		return self:GetDefaultAdminLevel()
+	return self._AdminCVar:GetInt()
+end
+
+function permFuncs:SetWorldAccess(worldAccess, doNotRequest)
+	if CLIENT then
+		if WARDEN_LOADED and not doNotRequest then
+			Warden.AdminSettingChange("perm_" .. self.KEY .. "_world_access", worldAccess)
+		end
+
+		return
 	end
 
-	return permLevel
-end
-
-function permFuncs:SetDefaultWorldAccess(worldAccess)
-	self.DefaultWorldAccess = worldAccess
-end
-
-function permFuncs:GetDefaultWorldAccess()
-	return self.DefaultWorldAccess or false
-end
-
-function permFuncs:GetWorldAccess()
 	if not self._WorldCVar then
-		return self:GetDefaultWorldAccess()
+		return
 	end
 
-	local worldAccess = self._WorldCVar:GetInt()
-	if worldAccess < 0 then
-		return self:GetDefaultWorldAccess()
-	end
-
-	return worldAccess == 1
+	self._WorldCVar:SetBool(worldAccess)
 end
 
-function permFuncs:SetEnabled(enabled)
-	self.Enabled = enabled
+function permFuncs:GetWorldAccess(cvarOnly)
+	if not self._WorldCVar then
+		return false
+	end
+
+	return self._WorldCVar:GetBool()
+end
+
+function permFuncs:SetEnabled(enabled, doNotRequest)
+	if CLIENT then
+		if WARDEN_LOADED and not doNotRequest then
+			Warden.AdminSettingChange("perm_" .. self.KEY .. "_enabled", enabled)
+		end
+
+		return
+	end
+
+	if not self._EnabledCVar then
+		return
+	end
+
+	self._EnabledCVar:SetBool(enabled)
 end
 
 function permFuncs:GetEnabled()
 	if not self._EnabledCVar then
-		return self.Enabled or true
+		return true
 	end
 
-	if not self._EnabledCVar:GetBool() then
-		return false
-	end
-
-	return self.Enabled or true
+	return self._EnabledCVar:GetBool()
 end
 
 -- // default permission definitions // --

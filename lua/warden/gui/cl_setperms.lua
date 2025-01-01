@@ -191,16 +191,16 @@ function PANEL:Repopulate()
 	end
 
 	for k, v in player.Iterator() do
-		if not IsValid(self.PlyList[v:UserID()]) then
-			local line
-			if v == LocalPlayer() then
-				line = self:MakeGlobalLine()
-			else
-				line = self:MakePlyLine(v)
-			end
+		if IsValid(self.PlyList[v:UserID()]) then continue end
 
-			self.PlyList[v:UserID()] = line
+		local line
+		if v == LocalPlayer() then
+			line = self:MakeGlobalLine()
+		else
+			line = self:MakePlyLine(v)
 		end
+
+		self.PlyList[v:UserID()] = line
 	end
 
 	for k, v in pairs(self.PlyList) do

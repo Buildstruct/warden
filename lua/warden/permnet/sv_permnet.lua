@@ -1,5 +1,4 @@
 util.AddNetworkString("WardenUpdatePermission")
-util.AddNetworkString("WardenAdminLevel")
 util.AddNetworkString("WardenInitialize")
 
 local initialized = {}

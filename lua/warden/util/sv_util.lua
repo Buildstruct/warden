@@ -1,3 +1,5 @@
+util.AddNetworkString("WardenAdminLevel")
+
 local PLAYER = FindMetaTable("Player")
 
 function Warden.FreezeEntities(steamID)

@@ -3,9 +3,9 @@ local USE_EXCEPTIONS = {
 	mediaplayer_tv_ext = true
 }
 
-local freezeCvar = CreateConVar("warden_freeze_disconnect", 1, nil, "Freeze owned entities on player disconnect", 0, 1)
-local cleanupCvar = CreateConVar("warden_cleanup_disconnect", 1, nil, "Cleanup owned entities on player disconnect", 0, 1)
-local cleanupTimeCvar = CreateConVar("warden_cleanup_time", 600, nil, "Time in seconds until cleanup after player disconnect", 0)
+local freezeCvar = CreateConVar("warden_freeze_disconnect", 1, FCVAR_REPLICATED, "Freeze owned entities on player disconnect", 0, 1)
+local cleanupCvar = CreateConVar("warden_cleanup_disconnect", 1, FCVAR_REPLICATED, "Cleanup owned entities on player disconnect", 0, 1)
+local cleanupTimeCvar = CreateConVar("warden_cleanup_time", 600, FCVAR_REPLICATED, "Time in seconds until cleanup after player disconnect", 0)
 
 hook.Add("GravGunPickupAllowed", "Warden", function(ply, ent)
 	if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN) then
