@@ -15,7 +15,7 @@ function PANEL:NewCol(name, desc)
 
 	col:SetTooltip(desc)
 	col:SetTooltipDelay(0)
-	col:SetFixedWidth(40)
+	col:SetFixedWidth(30)
 
 	return col
 end
@@ -23,8 +23,24 @@ end
 function PANEL:MakeColumns()
 	self:AddColumn("permission", 1)
 	self:NewCol("ON", "enabled")
+	self:NewCol("DF", "default")
 	self:NewCol("WA", "world access")
 	self:NewCol("AL", "admin level")
+end
+
+function PANEL:NewCheck(line, num)
+	local check = vgui.Create("Panel")
+	check.box = check:Add("DCheckBox")
+
+	function check.box.PerformLayout()
+		check.box:Center()
+	end
+
+	check.ApplySchemeSettings = function() end
+
+	line:SetValue(num, check)
+
+	return check
 end
 
 function PANEL:SetUpLine(key, perm)
@@ -37,35 +53,22 @@ function PANEL:SetUpLine(key, perm)
 		surface.DrawTexturedRect(3, h / 2 - 8, 16, 16)
 	end
 
-	local onCheck = vgui.Create("Panel")
-	onCheck.box = onCheck:Add("DCheckBox")
-
+	local onCheck = self:NewCheck(line, 2)
 	function onCheck.box.OnChange(_, val)
 		perm:SetEnabled(val)
+		hook.Call("WardenRepopSetPerms")
 	end
 
-	function onCheck.box.PerformLayout()
-		onCheck.box:Center()
+	local defCheck = self:NewCheck(line, 3)
+	function defCheck.box.OnChange(_, val)
+		perm:SetDefault(val)
+		hook.Call("WardenRepopSetPerms")
 	end
 
-	onCheck.ApplySchemeSettings = function() end
-
-	line:SetValue(2, onCheck)
-
-	local worldCheck = vgui.Create("Panel")
-	worldCheck.box = worldCheck:Add("DCheckBox")
-
+	local worldCheck = self:NewCheck(line, 4)
 	function worldCheck.box.OnChange(_, val)
 		perm:SetWorldAccess(val)
 	end
-
-	function worldCheck.box.PerformLayout()
-		worldCheck.box:Center()
-	end
-
-	worldCheck.ApplySchemeSettings = function() end
-
-	line:SetValue(3, worldCheck)
 
 	local adminLevel = vgui.Create("Panel")
 	adminLevel.box = adminLevel:Add("DNumberWang")
@@ -86,10 +89,13 @@ function PANEL:SetUpLine(key, perm)
 		adminLevel.box:Center()
 	end
 
-	line:SetValue(4, adminLevel)
+	adminLevel.ApplySchemeSettings = function() end
+
+	line:SetValue(5, adminLevel)
 
 	function line.FixChecks()
 		onCheck.box:SetChecked(perm:GetEnabled())
+		defCheck.box:SetChecked(perm:GetDefault())
 		worldCheck.box:SetChecked(perm:GetWorldAccess())
 		adminLevel.box:SetText(perm:GetAdminLevel())
 	end

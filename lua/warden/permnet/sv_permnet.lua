@@ -76,7 +76,7 @@ function Warden.GrantPermission(granter, receiver, keyOrID)
 	if not permID then return end
 
 	if IsValid(receiver) and receiver:IsPlayer() then
-		if Warden.PlyPerms[granter:SteamID()][permID]["global"] then
+		if Warden.HasPermissionGlobal(receiver, permID) then
 			hook.Run("WardenRevokePermission", granter, receiver, permID, true)
 		else
 			hook.Run("WardenGrantPermission", granter, receiver, permID)
@@ -99,7 +99,7 @@ function Warden.RevokePermission(revoker, receiver, keyOrID)
 	if not permID then return end
 
 	if IsValid(receiver) and receiver:IsPlayer() then
-		if Warden.PlyPerms[revoker:SteamID()][permID]["global"] then
+		if Warden.HasPermissionGlobal(receiver, permID) then
 			hook.Run("WardenGrantPermission", revoker, receiver, permID, true)
 		else
 			hook.Run("WardenRevokePermission", revoker, receiver, permID)

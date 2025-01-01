@@ -14,6 +14,7 @@ function Warden.CreatePermission(key)
 
 	tbl._AdminCVar = CreateConVar("warden_perm_" .. key .. "_admin_level", 99, FCVAR_REPLICATED, "Set the admin level needed for admins to override this permission.", 0, 99)
 	tbl._WorldCVar = CreateConVar("warden_perm_" .. key .. "_world_access", 0, FCVAR_REPLICATED, "Set whether the world has this permission", 0, 1)
+	tbl._DefaultCVar = CreateConVar("warden_perm_" .. key .. "_default", 0, FCVAR_REPLICATED, "Set whether this permission is set by default", 0, 1)
 	tbl._EnabledCVar = CreateConVar("warden_perm_" .. key .. "_enabled", 1, FCVAR_REPLICATED, "Set whether this permission is enabled", 0, 1)
 	tbl.KEY = key
 
@@ -149,6 +150,30 @@ function permFuncs:GetWorldAccess(cvarOnly)
 	return self._WorldCVar:GetBool()
 end
 
+function permFuncs:SetDefault(default, doNotRequest)
+	if CLIENT then
+		if WARDEN_LOADED and not doNotRequest then
+			Warden.AdminSettingChange("perm_" .. self.KEY .. "_default", default)
+		end
+
+		return
+	end
+
+	if not self._DefaultCVar then
+		return
+	end
+
+	self._DefaultCVar:SetBool(default)
+end
+
+function permFuncs:GetDefault()
+	if not self._DefaultCVar then
+		return false
+	end
+
+	return self._DefaultCVar:GetBool()
+end
+
 function permFuncs:SetEnabled(enabled, doNotRequest)
 	if CLIENT then
 		if WARDEN_LOADED and not doNotRequest then
@@ -205,68 +230,14 @@ function Warden.GetPermission(keyOrID, force)
 	return permID and Warden.Permissions[permID]
 end
 
--- collapse a keyOrID value into just a key for permissions
--- force: get the key even if it's disabled
-function Warden.PermKey(keyOrID, force)
-	local perm = Warden.GetPermission(keyOrID, force)
-	return perm and perm.KEY
-end
-
--- whether two ents have a local perm
-function Warden.HasPermissionLocal(receiver, granter, keyOrID)
-	receiver = Warden.GetOwner(receiver)
-	granter = Warden.GetOwner(granter)
-	if not IsValid(receiver) or not IsValid(granter) then return false end
-
-	granter:WardenEnsureSetup()
-
-	local id = Warden.PermID(keyOrID)
-	local permList = Warden.PlyPerms[granter:SteamID()][id]
-
-	return permList and permList[receiver:SteamID()] or false
-end
-
--- whether an ent has a global perm
-function Warden.HasPermissionGlobal(ent, keyOrID)
-	local ply = Warden.GetOwner(ent)
-	if not IsValid(ply) then return false end
-
-	ply:WardenEnsureSetup()
-
-	local id = Warden.PermID(keyOrID)
-	local permList = Warden.PlyPerms[ply:SteamID()][id]
-
-	return permList and permList.global or false
-end
-
--- get the permission status for two players
-function Warden.GetPermStatus(receiver, granter, keyOrID)
-	receiver = Warden.GetOwner(receiver)
-	granter = Warden.GetOwner(granter)
-
-	granter:WardenEnsureSetup()
-
-	local id = Warden.PermID(keyOrID)
-	local permList = Warden.PlyPerms[granter:SteamID()][id]
-
-	if not permList then return false end
-
-	local global = permList.global or false
-	local lcl = permList[receiver:SteamID()] or false
-
-	return global ~= lcl
-end
-
 Warden.GetPerm = Warden.GetPermission
 
 -- check if something has the permission to affect another thing
 -- keyOrID is the key or id of a permission
 function Warden.CheckPermission(receiver, granter, keyOrID)
 	local perm = Warden.GetPermission(keyOrID, true)
-	if not perm then return true end
-	if not perm:GetEnabled() then
-		return perm.ID ~= Warden.PERMISSION_ALL
-	end
+	if not perm then return false end
+	if not perm:GetEnabled() then return perm:GetDefault() end
 
 	receiver = Warden.GetOwner(receiver)
 	granter = Warden.GetOwner(granter)
@@ -301,10 +272,52 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 
 	granter:WardenEnsureSetup()
 
-	return Warden.GetPermStatus(receiver, granter, keyOrID)
+	return Warden.GetPermStatus(receiver, granter, perm)
 end
 
 Warden.HasPermission = Warden.CheckPermission
+
+-- collapse a keyOrID value into just a key for permissions
+-- force: get the key even if it's disabled
+function Warden.PermKey(keyOrID, force)
+	local perm = Warden.GetPermission(keyOrID, force)
+	return perm and perm.KEY
+end
+
+-- whether two ents have a local perm
+function Warden.HasPermissionLocal(receiver, granter, keyOrID)
+	receiver = Warden.GetOwner(receiver)
+	granter = Warden.GetOwner(granter)
+	if not IsValid(receiver) or not IsValid(granter) then return false end
+
+	granter:WardenEnsureSetup()
+
+	local id = Warden.PermID(keyOrID)
+	local permList = Warden.PlyPerms[granter:SteamID()][id]
+
+	return permList and permList[receiver:SteamID()] or false
+end
+
+-- whether an ent has a global perm
+function Warden.HasPermissionGlobal(ent, keyOrID)
+	local ply = Warden.GetOwner(ent)
+	if not IsValid(ply) then return false end
+
+	ply:WardenEnsureSetup()
+
+	local perm = Warden.GetPermission(keyOrID, true)
+	if not perm then return false end
+	if not perm:GetEnabled() then return perm:GetDefault() end
+
+	local permList = Warden.PlyPerms[ply:SteamID()][perm.ID]
+
+	local state = permList and permList.global
+	if state == nil then
+		state = perm:GetDefault()
+	end
+
+	return state
+end
 
 -- get every perm or every perm for a specific pair of ents
 function Warden.GetAllPermissions(receiver, granter)
@@ -333,4 +346,22 @@ function Warden.GetAllPermissions(receiver, granter)
 	end
 
 	return perms
+end
+
+-- get the permission status for two players
+-- intended to be internal, you probably want CheckPermission instead
+function Warden.GetPermStatus(receiver, granter, perm)
+	granter:WardenEnsureSetup()
+
+	local permList = Warden.PlyPerms[granter:SteamID()][perm.ID]
+	if not permList then return false end
+
+	local global = permList.global
+	if global == nil then
+		global = perm:GetDefault()
+	end
+
+	local lcl = permList[receiver:SteamID()] or false
+
+	return global ~= lcl
 end

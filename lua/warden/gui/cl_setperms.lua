@@ -7,7 +7,8 @@ function PANEL:Init()
 	self.PermList = {}
 	self.PlyList = {}
 
-	self:MakeColumns()
+	self:AddColumn("name", 1)
+
 	self:Repopulate()
 end
 
@@ -24,14 +25,6 @@ function PANEL:NewPermCol(id, perm)
 		surface.SetMaterial(perm:GetIcon())
 		surface.SetDrawColor(255, 255, 255)
 		surface.DrawTexturedRect(w / 2 - 8, h / 2 - 8, 16, 16)
-	end
-end
-
-function PANEL:MakeColumns()
-	self:AddColumn("name", 1)
-
-	for k, v in pairs(Warden.GetAllPermissions()) do
-		self:NewPermCol(k, v)
 	end
 end
 
@@ -57,10 +50,18 @@ function PANEL:ResetColumns()
 	end
 
 	if changed then
+		local c = table.Count(self._Perms)
+		local width = 20 + math.max(5 * (6 - c), 0)
+
 		for k, v in pairs(self.Columns) do
 			if not IsValid(v) then
 				self.Columns[k] = nil
+				continue
 			end
+		end
+
+		for k, v in pairs(self.PermList) do
+			v:SetFixedWidth(width)
 		end
 	end
 

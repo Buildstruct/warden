@@ -65,3 +65,11 @@ hook.Add("SpawnMenuOpened", "Warden", function()
 		permSettingsPnl:Repopulate()
 	end
 end)
+
+hook.Add("WardenRepopSetPerms", "Warden", function()
+	timer.Create("WardenRepopSetPerms", 1, 1, function()
+		if IsValid(setPermPnl) then
+			setPermPnl:Repopulate()
+		end
+	end)
+end)

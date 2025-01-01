@@ -30,7 +30,7 @@ function Warden.SetupPlayer(plyOrID)
 
 	Warden.PlyPerms[plyOrID] = {}
 	for _, v in pairs(Warden.Permissions) do
-		Warden.PlyPerms[plyOrID][v.ID] = { global = false }
+		Warden.PlyPerms[plyOrID][v.ID] = {}
 	end
 end
 
