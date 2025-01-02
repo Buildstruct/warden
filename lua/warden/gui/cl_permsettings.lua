@@ -94,10 +94,21 @@ function PANEL:SetUpLine(key, perm)
 	line:SetValue(5, adminLevel)
 
 	function line.FixChecks()
-		onCheck.box:SetChecked(perm:GetEnabled())
-		defCheck.box:SetChecked(perm:GetDefault())
-		worldCheck.box:SetChecked(perm:GetWorldAccess())
-		adminLevel.box:SetText(perm:GetAdminLevel())
+		local on = perm:GetEnabled()
+		onCheck.box:SetChecked(on)
+		line:SetSortValue(2, on and 1 or 0)
+
+		local def = perm:GetDefault()
+		defCheck.box:SetChecked(def)
+		line:SetSortValue(3, def and 1 or 0)
+
+		local wa = perm:GetWorldAccess()
+		worldCheck.box:SetChecked(wa)
+		line:SetSortValue(4, wa and 1 or 0)
+
+		local al = perm:GetAdminLevel()
+		adminLevel.box:SetText(al)
+		line:SetSortValue(5, al)
 	end
 
 	return line

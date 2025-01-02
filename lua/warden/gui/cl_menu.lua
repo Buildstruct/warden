@@ -88,8 +88,7 @@ local function serverSettings(panel)
 
 	function slider:OnValueChanged(val)
 		timer.Create("WardenUpdatingCleanup", 0.5, 1, function()
-			if IsValid(slider) and slider:IsEditing() then return end
-			Warden.SetServerSetting("cleanup_time", val)
+			Warden.SetServerSetting("cleanup_time", math.floor(val))
 		end)
 	end
 
