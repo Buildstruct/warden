@@ -41,6 +41,16 @@ function Warden.CleanupDisconnected()
 	end
 end
 
+function Warden.SetCVar(cvar, value)
+	if isnumber(value) then
+		cvar:SetInt(value)
+	elseif isbool(value) then
+		cvar:SetBool(value)
+	else
+		cvar:SetBool(false)
+	end
+end
+
 function PLAYER:WardenSetAdminLevel(level)
 	if type(level) ~= "number" and type(level) ~= "nil" then
 		error("admin level must be a number or nil", 2)

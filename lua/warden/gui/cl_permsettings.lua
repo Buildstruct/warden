@@ -1,7 +1,6 @@
 local PANEL = {}
 
 function PANEL:Init()
-	self:SetTall(200)
 	self:SetHeaderHeight(20)
 	self:SetMultiSelect(false)
 
@@ -125,6 +124,8 @@ function PANEL:Repopulate()
 	for k, v in pairs(self.PermList) do
 		v:FixChecks()
 	end
+
+	self:SetTall(self:GetHeaderHeight() + table.Count(self.PermList) * 17 + 1)
 end
 
 -- override
@@ -136,7 +137,7 @@ function PANEL:FixColumnsLayout()
 	for k, col in pairs(self.Columns) do
 		if k == 1 then continue end
 
-		totalWidth = totalWidth + math.ceil(col:GetWide())
+		totalWidth = totalWidth + col:GetWide()
 	end
 
 	local nameCol = self.Columns[1]
@@ -147,9 +148,9 @@ function PANEL:FixColumnsLayout()
 	local x = 0
 	for k, col in pairs(self.Columns) do
 		col.x = x
-		x = x + math.ceil(col:GetWide())
+		x = x + col:GetWide()
 
-		col:SetTall(math.ceil(self:GetHeaderHeight()))
+		col:SetTall(self:GetHeaderHeight())
 		col:SetVisible(not self:GetHideHeaders())
 	end
 end

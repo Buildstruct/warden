@@ -10,12 +10,8 @@ local permMeta = { __index = permFuncs }
 -- create an unregistered permission table
 function Warden.CreatePermission(key)
 	local tbl = {}
-	setmetatable(tbl, permMeta)
 
-	tbl._AdminCVar = CreateConVar("warden_perm_" .. key .. "_admin_level", 99, FCVAR_REPLICATED, "Set the admin level needed for admins to override this permission.", 0, 99)
-	tbl._WorldCVar = CreateConVar("warden_perm_" .. key .. "_world_access", 0, FCVAR_REPLICATED, "Set whether the world has this permission", 0, 1)
-	tbl._DefaultCVar = CreateConVar("warden_perm_" .. key .. "_default", 0, FCVAR_REPLICATED, "Set whether this permission is set by default", 0, 1)
-	tbl._EnabledCVar = CreateConVar("warden_perm_" .. key .. "_enabled", 1, FCVAR_REPLICATED, "Set whether this permission is enabled", 0, 1)
+	setmetatable(tbl, permMeta)
 	tbl.KEY = key
 
 	return tbl
@@ -24,10 +20,21 @@ end
 -- register a permission table to the server
 -- should be done immediately to allow servers to set the convars on startup
 -- try setting something under 'warden' in your lua folder to do this
-function Warden.RegisterPermission(tbl)
+function Warden.RegisterPermission(tbl, key)
 	local id = table.insert(Warden.Permissions, tbl)
 
-	Warden.PermissionIDs[tbl.KEY] = id
+	if not key then
+		key = tbl.KEY
+	else
+		setmetatable(tbl, permMeta)
+		tbl.KEY = key
+	end
+
+	Warden.PermissionIDs[key] = id
+	tbl._AdminCVar = CreateConVar("warden_perm_" .. key .. "_admin_level", 99, FCVAR_REPLICATED, "Set the admin level needed for admins to override this permission.", 0, 99)
+	tbl._WorldCVar = CreateConVar("warden_perm_" .. key .. "_world_access", 0, FCVAR_REPLICATED, "Set whether the world has this permission", 0, 1)
+	tbl._DefaultCVar = CreateConVar("warden_perm_" .. key .. "_default", 0, FCVAR_REPLICATED, "Set whether this permission is set by default", 0, 1)
+	tbl._EnabledCVar = CreateConVar("warden_perm_" .. key .. "_enabled", 1, FCVAR_REPLICATED, "Set whether this permission is enabled", 0, 1)
 	tbl.ID = id
 
 	return id, tbl
@@ -102,21 +109,48 @@ function permFuncs:GetDesc()
 	return self.Desc or "A permission"
 end
 
-function permFuncs:SetAdminLevel(adminLevel, doNotRequest)
-	if CLIENT then
-		if WARDEN_LOADED and not doNotRequest then
-			Warden.AdminSettingChange("perm_" .. self.KEY .. "_admin_level", adminLevel)
+local iou = {}
+
+local function makeSetter(name, cvar, cvarName)
+	permFuncs["Set" .. name] = function(self, value, doNotRequest)
+		if CLIENT then
+			if WARDEN_LOADED and not doNotRequest then
+				Warden.AdminSettingChange(string.format(cvarName, self.KEY), value)
+			end
+
+			return
 		end
 
-		return
-	end
+		-- if the convar isn't available we will get it later
+		if not self[cvar] then
+			if not iou then return end
 
-	if not self._AdminCVar then
-		return
-	end
+			iou[self.KEY .. cvar] = function()
+				if not self[cvar] then return end
+				Warden.SetCVar(self[cvar], value)
+			end
 
-	self._AdminCVar:SetInt(adminLevel)
+			return
+		end
+
+		if WARDEN_LOADED and not doNotRequest then
+			Warden.SetServerSetting(cvarName, value)
+		else
+			Warden.SetCVar(self[cvar], value)
+		end
+	end
 end
+
+-- the later in question
+hook.Add("PreGamemodeLoaded", "Warden", function()
+	for _, v in pairs(iou) do
+		v()
+	end
+
+	iou = nil
+end)
+
+makeSetter("AdminLevel", "_AdminCVar", "perm_%s_admin_level")
 
 function permFuncs:GetAdminLevel()
 	if not self._AdminCVar then
@@ -126,21 +160,7 @@ function permFuncs:GetAdminLevel()
 	return self._AdminCVar:GetInt()
 end
 
-function permFuncs:SetWorldAccess(worldAccess, doNotRequest)
-	if CLIENT then
-		if WARDEN_LOADED and not doNotRequest then
-			Warden.AdminSettingChange("perm_" .. self.KEY .. "_world_access", worldAccess)
-		end
-
-		return
-	end
-
-	if not self._WorldCVar then
-		return
-	end
-
-	self._WorldCVar:SetBool(worldAccess)
-end
+makeSetter("WorldAccess", "_WorldCVar", "perm_%s_world_access")
 
 function permFuncs:GetWorldAccess(cvarOnly)
 	if not self._WorldCVar then
@@ -150,21 +170,7 @@ function permFuncs:GetWorldAccess(cvarOnly)
 	return self._WorldCVar:GetBool()
 end
 
-function permFuncs:SetDefault(default, doNotRequest)
-	if CLIENT then
-		if WARDEN_LOADED and not doNotRequest then
-			Warden.AdminSettingChange("perm_" .. self.KEY .. "_default", default)
-		end
-
-		return
-	end
-
-	if not self._DefaultCVar then
-		return
-	end
-
-	self._DefaultCVar:SetBool(default)
-end
+makeSetter("Default", "_DefaultCVar", "perm_%s_default")
 
 function permFuncs:GetDefault()
 	if not self._DefaultCVar then
@@ -174,21 +180,7 @@ function permFuncs:GetDefault()
 	return self._DefaultCVar:GetBool()
 end
 
-function permFuncs:SetEnabled(enabled, doNotRequest)
-	if CLIENT then
-		if WARDEN_LOADED and not doNotRequest then
-			Warden.AdminSettingChange("perm_" .. self.KEY .. "_enabled", enabled)
-		end
-
-		return
-	end
-
-	if not self._EnabledCVar then
-		return
-	end
-
-	self._EnabledCVar:SetBool(enabled)
-end
+makeSetter("Enabled", "_EnabledCVar", "perm_%s_enabled")
 
 function permFuncs:GetEnabled()
 	if not self._EnabledCVar then
