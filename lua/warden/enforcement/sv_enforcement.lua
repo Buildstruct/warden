@@ -3,10 +3,6 @@ local USE_EXCEPTIONS = {
 	mediaplayer_tv_ext = true
 }
 
-local freezeCvar = CreateConVar("warden_freeze_disconnect", 1, FCVAR_REPLICATED, "Freeze owned entities on player disconnect", 0, 1)
-local cleanupCvar = CreateConVar("warden_cleanup_disconnect", 1, FCVAR_REPLICATED, "Cleanup owned entities on player disconnect", 0, 1)
-local cleanupTimeCvar = CreateConVar("warden_cleanup_time", 600, FCVAR_REPLICATED, "Time in seconds until cleanup after player disconnect", 0)
-
 hook.Add("GravGunPickupAllowed", "Warden", function(ply, ent)
 	if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN) then
 		return false
@@ -22,17 +18,10 @@ hook.Add("PlayerUse", "Warden", function(ply, ent)
 end)
 
 hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
-	if not ent or ent:IsWorld() then return end
-	if not ent:IsPlayer() and Warden.GetOwner(ent) == game.GetWorld() then return end
-
 	local attacker = dmg:GetAttacker()
-	local inflictor = dmg:GetInflictor()
-	local owner = Warden.GetOwner(inflictor)
-	local entOwner = Warden.GetOwner(ent)
-	local ValidAttacker = IsValid(attacker)
 
 	-- fix fire damage
-	if ValidAttacker and attacker:GetClass() == "entityflame" and IsValid(attacker:GetParent()) then
+	if IsValid(attacker) and attacker:GetClass() == "entityflame" and Warden.IsValidOwner(attacker:GetParent()) then
 		local newAttacker = attacker:GetParent():CPPIGetOwner()
 		if Warden.IsValidOwner(newAttacker) then
 			attacker = newAttacker
@@ -40,32 +29,10 @@ hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
 		end
 	end
 
-	-- Ignored damage types
-	if ent:IsVehicle() then
-		return
-	end
+	if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then return true end
 
-	if ValidAttacker and attacker:IsPlayer() then
-		-- Damage between players and players
-		if ent:IsPlayer() and not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then
-			return true
-		end
-
-		-- Damage between players and props
-		if IsValid(entOwner) and entOwner:IsPlayer() and not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then
-			return true
-		end
-	end
-
-	-- Prevent crush damage / damage from the world
-	if ent:IsPlayer() and attacker:IsWorld() or not ValidAttacker then
-		return true
-	end
-
-	-- Damage between unknown attackers and their owners
-	if IsValid(owner) and owner:IsPlayer() and not Warden.CheckPermission(owner, ent, Warden.PERMISSION_DAMAGE) then
-		return true
-	end
+	local inflictOwner = Warden.GetOwner(dmg:GetInflictor())
+	if not Warden.CheckPermission(inflictOwner, ent, Warden.PERMISSION_DAMAGE) then return true end
 end)
 
 hook.Add("CanEditVariable", "Warden", function(ent, ply)
@@ -87,12 +54,12 @@ hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
 	local steamID = data.networkid
 	Warden.PlyPerms[steamID] = nil
 
-	if freezeCvar:GetBool() then
+	if Warden.GetServerBool("freeze_disconnect", true) then
 		Warden.FreezeEntities(steamID)
 	end
 
-	if cleanupCvar:GetBool() then
-		local time = cleanupTimeCvar:GetInt()
+	if Warden.GetServerBool("cleanup_disconnect", true) then
+		local time = Warden.GetServerSetting("warden_cleanup_time")
 		local name = data.name
 
 		timer.Create("WardenCleanup#" .. steamID, time, 1, function()

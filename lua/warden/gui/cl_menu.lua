@@ -16,6 +16,8 @@ local function setPerms(panel)
 
 	setPermPnl = vgui.Create("WardenSetPerms")
 	panel:AddItem(setPermPnl)
+
+	panel:CheckBox("Let me touch my own entities", "warden_touch_self")
 end
 
 local function entInfo(panel)
@@ -43,11 +45,73 @@ local function entInfo(panel)
 	combo:AddChoice("Large", 2)
 end
 
+local checks = {}
+
+local function setUpCheck(check, setting)
+	table.insert(checks, function()
+		if not IsValid(check) then return end
+		check:SetChecked(Warden.GetServerBool(setting))
+	end)
+
+	function check:OnChange(val)
+		Warden.SetServerSetting(setting, val)
+	end
+end
+
 local function serverSettings(panel)
 	panel:Help("Configure the server's settings.")
 
 	permSettingsPnl = vgui.Create("WardenPermSettings")
 	panel:AddItem(permSettingsPnl)
+
+	checks = {}
+
+	setUpCheck(panel:CheckBox("Players can always affect bots"), "always_target_bots")
+
+	addSpacer(panel)
+
+	setUpCheck(panel:CheckBox("Freeze players' entities on disconnect"), "freeze_disconnect")
+	setUpCheck(panel:CheckBox("Clean up players' entities on disconnect"), "cleanup_disconnect")
+
+	local slider = panel:NumSlider("Entity cleanup time", nil, 0, 1000, 0)
+	slider:SetDefaultValue(Warden.GetDefaultServerSetting("cleanup_time"))
+
+	table.insert(checks, function()
+		if not IsValid(slider) then return end
+
+		local val = Warden.GetServerSetting("cleanup_time")
+		slider.Scratch:SetFloatValue(val)
+		slider.TextArea:SetValue(slider.Scratch:GetTextValue())
+		slider.Slider:SetSlideX(slider.Scratch:GetFraction())
+		slider:SetCookie("slider_val", val)
+	end)
+
+	function slider:OnValueChanged(val)
+		timer.Create("WardenUpdatingCleanup", 0.5, 1, function()
+			if IsValid(slider) and slider:IsEditing() then return end
+			Warden.SetServerSetting("cleanup_time", val)
+		end)
+	end
+
+	addSpacer(panel)
+
+	setUpCheck(panel:CheckBox("Admin level needs admin"), "admin_level_needs_admin")
+
+	local numWang = panel:NumberWang("Default admin level", nil, 0, 99, 0)
+	numWang:HideWang()
+
+	table.insert(checks, function()
+		if not IsValid(numWang) then return end
+		numWang:SetText(Warden.GetServerSetting("default_admin_level"))
+	end)
+
+	function numWang:OnValueChanged(val)
+		Warden.SetServerSetting("default_admin_level", val)
+	end
+
+	for _, v in ipairs(checks) do
+		v()
+	end
 end
 
 hook.Add("PopulateToolMenu", "Warden", function()
@@ -63,6 +127,10 @@ hook.Add("SpawnMenuOpened", "Warden", function()
 
 	if IsValid(permSettingsPnl) then
 		permSettingsPnl:Repopulate()
+	end
+
+	for _, v in ipairs(checks) do
+		v()
 	end
 end)
 

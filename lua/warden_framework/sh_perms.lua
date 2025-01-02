@@ -2,8 +2,6 @@ Warden.Permissions = {}
 Warden.PermissionIDs = {}
 Warden.PlyPerms = Warden.PlyPerms or {}
 
-local targetBotsCvar = CreateConVar("warden_always_target_bots", 1, FCVAR_REPLICATED, "If true, bots always have all their permissions overridden.", 0, 1)
-
 local permFuncs = {}
 local permMeta = { __index = permFuncs }
 
@@ -31,10 +29,6 @@ function Warden.RegisterPermission(tbl, key)
 	end
 
 	Warden.PermissionIDs[key] = id
-	tbl._AdminCVar = CreateConVar("warden_perm_" .. key .. "_admin_level", 99, FCVAR_REPLICATED, "Set the admin level needed for admins to override this permission.", 0, 99)
-	tbl._WorldCVar = CreateConVar("warden_perm_" .. key .. "_world_access", 0, FCVAR_REPLICATED, "Set whether the world has this permission", 0, 1)
-	tbl._DefaultCVar = CreateConVar("warden_perm_" .. key .. "_default", 0, FCVAR_REPLICATED, "Set whether this permission is set by default", 0, 1)
-	tbl._EnabledCVar = CreateConVar("warden_perm_" .. key .. "_enabled", 1, FCVAR_REPLICATED, "Set whether this permission is enabled", 0, 1)
 	tbl.ID = id
 
 	return id, tbl
@@ -109,86 +103,28 @@ function permFuncs:GetDesc()
 	return self.Desc or "A permission"
 end
 
-local iou = {}
-
-local function makeSetter(name, cvar, cvarName)
-	permFuncs["Set" .. name] = function(self, value, doNotRequest)
-		if CLIENT then
-			if WARDEN_LOADED and not doNotRequest then
-				Warden.AdminSettingChange(string.format(cvarName, self.KEY), value)
-			end
-
+local function makeGetSet(name, cvarName, get, fallback)
+	permFuncs["Set" .. name] = function(self, value, doNotSave)
+		if WARDEN_LOADED and not doNotSave then
+			Warden.SetServerSetting(cvarName .. self.KEY, value)
 			return
 		end
 
-		-- if the convar isn't available we will get it later
-		if not self[cvar] then
-			if not iou then return end
+		self[name] = value
+	end
 
-			iou[self.KEY .. cvar] = function()
-				if not self[cvar] then return end
-				Warden.SetCVar(self[cvar], value)
-			end
+	permFuncs["Get" .. name] = function(self)
+		local fallback1 = self[name]
+		if fallback1 == nil then fallback1 = fallback end
 
-			return
-		end
-
-		if WARDEN_LOADED and not doNotRequest then
-			Warden.SetServerSetting(cvarName, value)
-		else
-			Warden.SetCVar(self[cvar], value)
-		end
+		return Warden["GetServer" .. get](cvarName .. self.KEY, fallback1)
 	end
 end
 
--- the later in question
-hook.Add("PreGamemodeLoaded", "Warden", function()
-	for _, v in pairs(iou) do
-		v()
-	end
-
-	iou = nil
-end)
-
-makeSetter("AdminLevel", "_AdminCVar", "perm_%s_admin_level")
-
-function permFuncs:GetAdminLevel()
-	if not self._AdminCVar then
-		return 99
-	end
-
-	return self._AdminCVar:GetInt()
-end
-
-makeSetter("WorldAccess", "_WorldCVar", "perm_%s_world_access")
-
-function permFuncs:GetWorldAccess(cvarOnly)
-	if not self._WorldCVar then
-		return false
-	end
-
-	return self._WorldCVar:GetBool()
-end
-
-makeSetter("Default", "_DefaultCVar", "perm_%s_default")
-
-function permFuncs:GetDefault()
-	if not self._DefaultCVar then
-		return false
-	end
-
-	return self._DefaultCVar:GetBool()
-end
-
-makeSetter("Enabled", "_EnabledCVar", "perm_%s_enabled")
-
-function permFuncs:GetEnabled()
-	if not self._EnabledCVar then
-		return true
-	end
-
-	return self._EnabledCVar:GetBool()
-end
+makeGetSet("AdminLevel", "admin_level_", "Setting", 99)
+makeGetSet("WorldAccess", "world_access_", "Bool", false)
+makeGetSet("Default", "default_", "Bool", false)
+makeGetSet("Enabled", "enabled_", "Bool", true)
 
 -- // default permission definitions // --
 
@@ -209,6 +145,11 @@ function Warden.PermID(keyOrID, force)
 		permID = Warden.PermissionIDs[keyOrID]
 	end
 
+	if type(keyOrID) == "table" then
+		if not force and not keyOrID:GetEnabled() then return end
+		return keyOrID.ID
+	end
+
 	local perm = Warden.Permissions[permID]
 	if perm and (force or perm:GetEnabled()) then
 		return permID
@@ -218,6 +159,11 @@ end
 -- get a permission object from the key or id
 -- force: get the permission even if it's disabled
 function Warden.GetPermission(keyOrID, force)
+	if type(keyOrID) == "table" then
+		if not force and not keyOrID:GetEnabled() then return end
+		return keyOrID
+	end
+
 	local permID = Warden.PermID(keyOrID, force)
 	return permID and Warden.Permissions[permID]
 end
@@ -229,42 +175,47 @@ Warden.GetPerm = Warden.GetPermission
 function Warden.CheckPermission(receiver, granter, keyOrID)
 	local perm = Warden.GetPermission(keyOrID, true)
 	if not perm then return false end
-	if not perm:GetEnabled() then return perm:GetDefault() end
 
-	receiver = Warden.GetOwner(receiver)
-	granter = Warden.GetOwner(granter)
+	local receiverOwner = Warden.GetOwner(receiver)
+	local granterOwner = Warden.GetOwner(granter)
 
-	if not receiver then return false end
-	if IsValid(receiver) and perm:GetAdminLevel() <= receiver:WardenGetAdminLevel() then return true end
-	if not granter then return false end
+	if not receiverOwner then return false end
+	if IsValid(receiverOwner) and perm:GetAdminLevel() <= receiverOwner:WardenGetAdminLevel() then return true end
+	if not granterOwner then return false end
 
-	if (receiver.IsWorld and receiver:IsWorld()) or (granter.IsWorld and granter:IsWorld()) then
-		local wOverride = hook.Run("WardenCheckPermissionWorld", receiver, granter, Warden.PermID(keyOrID))
+	if (receiverOwner.IsWorld and receiverOwner:IsWorld()) or (granterOwner.IsWorld and granterOwner:IsWorld()) then
+		local wOverride = hook.Run("WardenCheckPermissionWorld", receiverOwner, granterOwner, perm.ID)
 		if wOverride ~= nil then return wOverride end
 
 		return perm:GetWorldAccess()
 	end
 
-	if not IsValid(receiver) or not IsValid(granter) then return false end
+	if not IsValid(receiverOwner) or not IsValid(granterOwner) then return false end
 
-	-- both receiver and granter are confirmed players
+	-- both receiverOwner and granterOwner are confirmed players
 
-	local override = hook.Run("WardenCheckPermission", receiver, granter, Warden.PermID(keyOrID))
+	local override = hook.Run("WardenCheckPermission", receiverOwner, granterOwner, perm.ID)
 	if override ~= nil then return override end
 
-	if granter:IsBot() and targetBotsCvar:GetBool() then
+	if granterOwner:IsBot() and Warden.GetServerBool("always_target_bots", false) then
 		return true
 	end
 
-	if receiver == granter then return true end
+	if receiverOwner == granterOwner then
+		if receiver == receiverOwner and receiver ~= granter then
+			return receiverOwner:GetInfoNum("warden_touch_self", 1) == 1
+		end
 
-	if perm.ID ~= Warden.PERMISSION_ALL and Warden.CheckPermission(receiver, granter, Warden.PERMISSION_ALL) then
 		return true
 	end
 
-	granter:WardenEnsureSetup()
+	if perm.ID ~= Warden.PERMISSION_ALL and Warden.CheckPermission(receiverOwner, granterOwner, Warden.PERMISSION_ALL) then
+		return true
+	end
 
-	return Warden.GetPermStatus(receiver, granter, perm)
+	granterOwner:WardenEnsureSetup()
+
+	return Warden.GetPermStatus(receiverOwner, granterOwner, perm)
 end
 
 Warden.HasPermission = Warden.CheckPermission
@@ -344,6 +295,8 @@ end
 -- intended to be internal, you probably want CheckPermission instead
 function Warden.GetPermStatus(receiver, granter, perm)
 	granter:WardenEnsureSetup()
+
+	if not perm:GetEnabled() then return perm:GetDefault() end
 
 	local permList = Warden.PlyPerms[granter:SteamID()][perm.ID]
 	if not permList then return false end

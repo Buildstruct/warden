@@ -1,7 +1,7 @@
 local PANEL = {}
 
 function PANEL:Init()
-	self:SetTall(500)
+	self:SetTall(400)
 	self:SetHeaderHeight(20)
 	self:SetMultiSelect(false)
 
@@ -122,6 +122,7 @@ function PANEL:MakeGlobalLine()
 		check.ApplySchemeSettings = function() end
 
 		line:SetValue(k, check)
+		line:SetSortValue(k, -1)
 	end
 
 	function line.FixChecks()
