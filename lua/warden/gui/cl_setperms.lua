@@ -3,6 +3,7 @@ local PANEL = {}
 function PANEL:Init()
 	self:SetTall(500)
 	self:SetHeaderHeight(20)
+	self:SetMultiSelect(false)
 
 	self.PermList = {}
 	self.PlyList = {}
@@ -68,6 +69,8 @@ function PANEL:ResetColumns()
 	return changed
 end
 
+local cross = Material("icon16/cross.png")
+
 local function checkFuncs(pnl, permID, ply)
 	function pnl.OnChange(_, val)
 		Warden.PermissionRequest(ply, val, permID)
@@ -98,7 +101,8 @@ local magenta = Color(255, 192, 255)
 function PANEL:MakeGlobalLine()
 	local line = self:AddLine("[[GLOBAL]]")
 
-	line:SetZPos(1)
+	line:SetZPos(-32768)
+	line:SetSortValue(1, -1)
 
 	line.Columns[1].ApplySchemeSettings = function()
 		if line:IsLineSelected() then
@@ -234,6 +238,28 @@ function PANEL:FixColumnsLayout()
 		col:SetTall(math.ceil(self:GetHeaderHeight()))
 		col:SetVisible(not self:GetHideHeaders())
 	end
+end
+
+-- override
+function PANEL:SortByColumn(cID, descending)
+	table.sort(self.Sorted, function(a, b)
+		local aval = a:GetSortValue(cID) or a:GetColumnText(cID)
+		local bval = b:GetSortValue(cID) or b:GetColumnText(cID)
+
+		if aval == -1 then return true end
+		if bval == -1 then return false end
+
+		if descending then
+			aval, bval = bval, aval
+		end
+
+		if isnumber(aval) and isnumber(bval) then return aval < bval end
+
+		return tostring(aval) < tostring(bval)
+	end)
+
+	self:SetDirty(true)
+	self:InvalidateLayout()
 end
 
 vgui.Register("WardenSetPerms", PANEL, "DListView")

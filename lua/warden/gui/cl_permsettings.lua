@@ -3,6 +3,7 @@ local PANEL = {}
 function PANEL:Init()
 	self:SetTall(200)
 	self:SetHeaderHeight(20)
+	self:SetMultiSelect(false)
 
 	self.PermList = {}
 
