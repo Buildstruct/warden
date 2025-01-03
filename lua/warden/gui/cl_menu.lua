@@ -61,6 +61,18 @@ end
 local function serverSettings(panel)
 	panel:Help("Configure the server's settings.")
 
+	panel:SetLabel("Server Settings (superadmins only)")
+
+	function panel:PaintOver(w, h)
+		local headerHeight = self:GetHeaderHeight()
+
+		if headerHeight >= h then return end
+		if LocalPlayer():IsSuperAdmin() then return end
+
+		surface.SetDrawColor(255, 0, 0)
+		surface.DrawOutlinedRect(0, headerHeight, w, h - headerHeight, 2)
+	end
+
 	permSettingsPnl = vgui.Create("WardenPermSettings")
 	panel:AddItem(permSettingsPnl)
 
