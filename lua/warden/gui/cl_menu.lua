@@ -105,7 +105,7 @@ local function serverSettings(panel)
 	end)
 
 	function numWang:OnValueChanged(val)
-		Warden.SetServerSetting("default_admin_level", val)
+		Warden.SetServerSetting("default_admin_level", math.Clamp(val, 0, 99))
 	end
 
 	for _, v in ipairs(checks) do

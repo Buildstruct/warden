@@ -180,7 +180,15 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 	local granterOwner = Warden.GetOwner(granter)
 
 	if not receiverOwner then return false end
+
+	local bypass = Warden.GetEntPermBypass(granter, perm)
+	if bypass ~= nil then
+		if bypass then return true end
+		if not IsValid(receiverOwner) or not Warden.PlyBypassesFilters(receiverOwner) then return false end
+	end
+
 	if IsValid(receiverOwner) and perm:GetAdminLevel() <= receiverOwner:WardenGetAdminLevel() then return true end
+
 	if not granterOwner then return false end
 
 	if (receiverOwner.IsWorld and receiverOwner:IsWorld()) or (granterOwner.IsWorld and granterOwner:IsWorld()) then

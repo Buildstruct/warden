@@ -74,3 +74,31 @@ hook.Add("CanProperty", "Warden", function(ply, property, ent)
 		return false
 	end
 end)
+
+hook.Add("PlayerSpawnObject", "Warden", function(ply, model)
+	if not Warden.IsModelBlocked(model) then return end
+	if Warden.PlyBypassesFilters(ply) then return end
+	return false
+end)
+
+local blockHooks = { "PlayerSpawnSENT", "PlayerSpawnSWEP", "PlayerGiveSWEP" }
+
+for _, v in ipairs(blockHooks) do
+	hook.Add(v, "WardenBlock", function(ply, class)
+		if not Warden.IsClassBlocked(class) then return end
+		if Warden.PlyBypassesFilters(ply) then return end
+		return false
+	end)
+end
+
+hook.Add("PlayerSpawnNPC", "WardenBlock", function(ply, class, wep)
+	if not Warden.IsClassBlocked(class) and not Warden.IsClassBlocked(wep) then return end
+	if Warden.PlyBypassesFilters(ply) then return end
+	return false
+end)
+
+hook.Add("PlayerSpawnVehicle", "WardenBlock", function(ply, _, class)
+	if not Warden.IsClassBlocked(class) then return end
+	if Warden.PlyBypassesFilters(ply) then return end
+	return false
+end)

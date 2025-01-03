@@ -1,5 +1,9 @@
 Warden = Warden or {}
 
+if SERVER then
+	file.CreateDir("warden")
+end
+
 local function addFile(File, directory)
 	local prefix = string.lower(string.Left(File, 3))
 

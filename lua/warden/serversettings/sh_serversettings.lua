@@ -25,3 +25,13 @@ function Warden.GetServerBool(setting, fallback)
 
 	return value ~= 0
 end
+
+Warden.SetDefaultServerSetting("always_target_bots", false)
+
+Warden.SetDefaultServerSetting("freeze_disconnect", true)
+Warden.SetDefaultServerSetting("cleanup_disconnect", true)
+Warden.SetDefaultServerSetting("cleanup_time", 600)
+
+Warden.SetDefaultServerSetting("admin_level_needs_admin", true)
+Warden.SetDefaultServerSetting("default_admin_level", 0)
+Warden.SetDefaultServerSetting("admin_level_filter_bypass", 4)

@@ -1,7 +1,7 @@
 util.AddNetworkString("WardenAdminSettingChange")
 
 do
-	local newSettings = file.Read("warden_settings.json", "DATA")
+	local newSettings = file.Read("warden/settings.json", "DATA")
 	if newSettings then
 		Warden.Settings = util.JSONToTable(newSettings)
 	else
@@ -26,7 +26,7 @@ function Warden.SetServerSetting(setting, value)
 	end
 
 	Warden.Settings[setting] = newVal
-	file.Write("warden_settings.json", util.TableToJSON(Warden.Settings))
+	file.Write("warden/settings.json", util.TableToJSON(Warden.Settings))
 
 	net.Start("WardenAdminSettingChange")
 	net.WriteUInt(1, 8)
