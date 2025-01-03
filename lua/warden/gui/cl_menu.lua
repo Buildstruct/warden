@@ -111,6 +111,11 @@ local function serverSettings(panel)
 	local numWang = panel:NumberWang("Default admin level", nil, 0, 99, 0)
 	numWang:HideWang()
 
+	function numWang:PerformLayout()
+		self:SetTall(16)
+		self:AlignBottom()
+	end
+
 	table.insert(checks, function()
 		if not IsValid(numWang) then return end
 		numWang:SetText(Warden.GetServerSetting("default_admin_level"))

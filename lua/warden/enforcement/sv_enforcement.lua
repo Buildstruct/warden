@@ -59,7 +59,7 @@ hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
 	end
 
 	if Warden.GetServerBool("cleanup_disconnect", true) then
-		local time = Warden.GetServerSetting("warden_cleanup_time")
+		local time = Warden.GetServerSetting("cleanup_time", 600)
 		local name = data.name
 
 		timer.Create("WardenCleanup#" .. steamID, time, 1, function()

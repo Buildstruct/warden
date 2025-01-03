@@ -11,6 +11,8 @@ function PANEL:Init()
 	self:AddColumn("name", 1)
 
 	self:Repopulate()
+
+	self:SortByColumn(1)
 end
 
 function PANEL:NewPermCol(id, perm)
@@ -71,9 +73,10 @@ end
 
 local cross = Material("icon16/cross.png")
 
-local function checkFuncs(pnl, permID, ply)
+local function checkFuncs(pnl, permID, ply, callback)
 	function pnl.OnChange(_, val)
 		Warden.PermissionRequest(ply, val, permID)
+		if callback then callback(val) end
 	end
 
 	function pnl.PerformLayout(_, val)
@@ -101,7 +104,6 @@ local magenta = Color(255, 192, 255)
 function PANEL:MakeGlobalLine()
 	local line = self:AddLine("[[GLOBAL]]")
 
-	line:SetZPos(-32768)
 	line:SetSortValue(1, -1)
 
 	line.Columns[1].ApplySchemeSettings = function()
@@ -147,7 +149,9 @@ function PANEL:MakePlyLine(ply)
 
 		local check = vgui.Create("Panel")
 		check.box = check:Add("DCheckBox")
-		checkFuncs(check.box, v.ID, ply)
+		checkFuncs(check.box, v.ID, ply, function(val)
+			line:SetSortValue(k, val and 1 or 0)
+		end)
 
 		check.ApplySchemeSettings = function() end
 
@@ -211,6 +215,10 @@ function PANEL:Repopulate()
 
 	for k, v in pairs(self.PlyList) do
 		v:FixChecks()
+	end
+
+	if changed then
+		self:SortByColumn(1)
 	end
 end
 

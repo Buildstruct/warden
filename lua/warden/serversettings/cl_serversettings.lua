@@ -21,7 +21,7 @@ function Warden.SetServerSetting(setting, value)
 	end
 
 	net.Start("WardenAdminSettingChange")
-	net.WriteString(string.gsub(setting, "warden_", ""))
+	net.WriteString(setting)
 	net.WriteInt(newVal, 11)
 	net.SendToServer()
 end

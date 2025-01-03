@@ -56,17 +56,20 @@ function PANEL:SetUpLine(key, perm)
 	local onCheck = self:NewCheck(line, 2)
 	function onCheck.box.OnChange(_, val)
 		perm:SetEnabled(val)
+		line:SetSortValue(2, val and 1 or 0)
 		hook.Call("WardenRepopSetPerms")
 	end
 
 	local defCheck = self:NewCheck(line, 3)
 	function defCheck.box.OnChange(_, val)
 		perm:SetDefault(val)
+		line:SetSortValue(3, val and 1 or 0)
 		hook.Call("WardenRepopSetPerms")
 	end
 
 	local worldCheck = self:NewCheck(line, 4)
 	function worldCheck.box.OnChange(_, val)
+		line:SetSortValue(4, val and 1 or 0)
 		perm:SetWorldAccess(val)
 	end
 
@@ -79,7 +82,9 @@ function PANEL:SetUpLine(key, perm)
 	adminLevel.box:HideWang()
 
 	function adminLevel.box.OnValueChanged(_, val)
-		perm:SetAdminLevel(math.Clamp(val, 1, 99))
+		local newVal = math.Clamp(val, 1, 99)
+		perm:SetAdminLevel(newVal)
+		line:SetSortValue(5, newVal)
 	end
 
 	function adminLevel.box.PerformLayout()

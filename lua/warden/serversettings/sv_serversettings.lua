@@ -19,7 +19,7 @@ function Warden.SetServerSetting(setting, value)
 		if not newVal then return end
 	end
 
-	setting = string.sub(string.gsub(setting, "warden_", ""), 1, 100)
+	setting = string.sub(setting, 1, 100)
 
 	if table.Count(Warden.Settings) >= 255 and not Warden.Settings[setting] then
 		error("[WARDEN] Too many settings on file?")
