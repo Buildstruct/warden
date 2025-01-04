@@ -8,12 +8,12 @@ net.Receive("WardenInitialize", function(_, ply)
 
 	Warden.SetupPlayer(ply)
 	net.Start("WardenInitialize")
-	net.WriteUInt(#Warden.PlyPerms, 8)
+	net.WriteUInt(#Warden.PlyPerms, Warden.PERM_PLY_NET_SIZE)
 	for steamID, perms in pairs(Warden.PlyPerms) do
 		net.WriteString(steamID)
-		net.WriteUInt(#perms, 8)
+		net.WriteUInt(#perms, Warden.PERM_NET_SIZE)
 		for permID, steamIDs in pairs(perms) do
-			net.WriteUInt(permID, 8)
+			net.WriteUInt(permID, Warden.PERM_NET_SIZE)
 
 			local toSend = {}
 			for steamID1, granted in pairs(steamIDs) do
@@ -22,7 +22,7 @@ net.Receive("WardenInitialize", function(_, ply)
 				end
 			end
 
-			net.WriteUInt(#toSend, 8)
+			net.WriteUInt(#toSend, Warden.PERM_PLY_NET_SIZE)
 			for _, steamID1 in ipairs(toSend) do
 				net.WriteString(steamID1)
 			end

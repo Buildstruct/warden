@@ -77,7 +77,7 @@ end
 -- get all entities owned by a player
 -- the callback receives each ent and returns whether the ent should be added to the list
 function Warden.GetOwnedEntities(plyOrID, callback)
-	local tbl = Warden.GetPlayerTable(plyOrID)
+	local tbl = Warden._GetPlayerTable(plyOrID)
 	if table.IsEmpty(tbl) then return {} end
 
 	local steamID = Warden.PossibleSteamID(plyOrID)
@@ -136,7 +136,7 @@ function Warden.GetOwnerID(ent)
 	if world then return "World" end
 	if ent:IsPlayer() then return ent:SteamID() end
 
-	local ownership = Warden.GetOwnerTable(ent)
+	local ownership = Warden._GetOwnerTable(ent)
 	if ownership then return ownership.steamID end
 end
 function ENTITY:WardenGetOwnerID()
@@ -157,7 +157,7 @@ end
 -- returns how many times an entity's owner has changed
 -- possibly useful for debugging and sanity checks
 function Warden.GetOwnerChanges(entOrID)
-	local tbl = Warden.GetOwnerTable(entOrID)
+	local tbl = Warden._GetOwnerTable(entOrID)
 	if not tbl then return 0 end -- never had an owner
 	if not tbl.changes then return 1 end -- had its first owner
 
@@ -210,7 +210,7 @@ function Warden.SetOwner(entOrID, plyOrID)
 	Warden.Players[steamID] = Warden.Players[steamID] or {}
 	Warden.Players[steamID][entID] = true
 
-	Warden.UpdateOwnerData(steamID, entID)
+	Warden._UpdateOwnerData(steamID, entID)
 
 	if SERVER then
 		Entity(entID):CallOnRemove("WardenOwnership", Warden.ClearOwner)
@@ -247,7 +247,7 @@ function Warden.ClearOwner(entOrID, noNetwork)
 	end
 
 	if not noNetwork then
-		Warden.UpdateOwnerData("None", id)
+		Warden._UpdateOwnerData("None", id)
 	end
 end
 function ENTITY:WardenClearOwner(noNetwork)
@@ -273,7 +273,7 @@ function Warden.ReplaceOwner(from, to)
 	local toID = Warden.PossibleEntIndex(to)
 	if not toID then return end
 
-	local ownership = Warden.GetOwnerTable(fromID)
+	local ownership = Warden._GetOwnerTable(fromID)
 	if not ownership then return end -- is ownerless
 
 	Warden.SetOwner(toID, ownership.steamID)
@@ -286,7 +286,7 @@ end
 
 -- either retrieve the entire owner table or the table of a single entity
 -- intended to be internal
-function Warden.GetOwnerTable(entOrID)
+function Warden._GetOwnerTable(entOrID)
 	if not entOrID then
 		return Warden.Ownership
 	end
@@ -299,7 +299,7 @@ end
 
 -- get a list of entids that a player owns
 -- intended to be internal
-function Warden.GetPlayerTable(plyOrID)
+function Warden._GetPlayerTable(plyOrID)
 	if not plyOrID then
 		return Warden.Players
 	end
@@ -315,7 +315,7 @@ if SERVER then
 
 	-- send everything
 	-- intended to be internal, but it's global in case it's somehow needed
-	function Warden.SendAllOwnerData(plys)
+	function Warden._SendAllOwnerData(plys)
 		net.Start("WardenOwnership")
 		net.WriteUInt(NET.ALL_ENT, NET_SIZE_TYPE)
 
@@ -404,7 +404,7 @@ if SERVER then
 
 	-- send a new owner entry to everyone
 	-- intended to be internal, but it's global in case it's somehow needed
-	function Warden.UpdateOwnerData(steamID, entID)
+	function Warden._UpdateOwnerData(steamID, entID)
 		toUpdateNone[entID] = nil
 		toUpdateWorld[entID] = nil
 		for _, v in pairs(toUpdate) do
@@ -439,21 +439,21 @@ if SERVER then
 	end)
 
 	net.Receive("WardenOwnership", function(_, ply)
-		Warden.SendAllOwnerData(ply)
+		Warden._SendAllOwnerData(ply)
 	end)
 
-	timer.Create("WardenSendAllOwnerData", 120, 0, Warden.SendAllOwnerData)
+	timer.Create("WardenSendAllOwnerData", 120, 0, Warden._SendAllOwnerData)
 
 	return
 end
 
 -- dummy function for shared parity
 -- intended to be internal
-function Warden.UpdateOwnerData() end
+function Warden._UpdateOwnerData() end
 
 -- ask the server for owner data
 -- intended to be internal
-function Warden.RequestAllOwnerData()
+function Warden._RequestAllOwnerData()
 	net.Start("WardenOwnership")
 	net.SendToServer()
 end
@@ -516,6 +516,6 @@ net.Receive("WardenOwnership", function()
 end)
 
 hook.Add("InitPostEntity", "WardenGetOwnerData", function()
-	timer.Simple(10, Warden.RequestAllOwnerData)
-	Warden.RequestAllOwnerData()
+	timer.Simple(10, Warden._RequestAllOwnerData)
+	Warden._RequestAllOwnerData()
 end)

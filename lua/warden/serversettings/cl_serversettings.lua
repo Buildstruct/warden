@@ -22,16 +22,16 @@ function Warden.SetServerSetting(setting, value)
 
 	net.Start("WardenAdminSettingChange")
 	net.WriteString(setting)
-	net.WriteInt(newVal, 11)
+	net.WriteInt(newVal, WARDEN.SETTINGS_OPTION_NET_SIZE)
 	net.SendToServer()
 end
 
 net.Receive("WardenAdminSettingChange", function()
-	local count = net.ReadUInt(8)
+	local count = net.ReadUInt(Warden.SETTINGS_NET_SIZE)
 
 	for i = 1, count do
 		local setting = net.ReadString()
-		local value = net.ReadInt(11)
+		local value = net.ReadInt(WARDEN.SETTINGS_OPTION_NET_SIZE)
 
 		Warden.Settings[setting] = value
 	end

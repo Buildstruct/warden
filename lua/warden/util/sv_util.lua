@@ -26,7 +26,7 @@ function Warden.CleanupEntities(steamID)
 end
 
 function Warden.FreezeDisconnected()
-	for steamID, _ in pairs(Warden.GetPlayerTable()) do
+	for steamID, _ in pairs(Warden._GetPlayerTable()) do
 		if Warden.PlayerIsDisconnected(steamID) then
 			Warden.FreezeEntities(steamID)
 		end
@@ -34,7 +34,7 @@ function Warden.FreezeDisconnected()
 end
 
 function Warden.CleanupDisconnected()
-	for steamID, _ in pairs(Warden.GetPlayerTable()) do
+	for steamID, _ in pairs(Warden._GetPlayerTable()) do
 		if Warden.PlayerIsDisconnected(steamID) then
 			Warden.CleanupEntities(steamID)
 		end

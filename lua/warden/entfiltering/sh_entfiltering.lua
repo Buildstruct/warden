@@ -1,13 +1,8 @@
 Warden.ClassFilters = Warden.ClassFilters or {}
 Warden.ModelFilters = Warden.ModelFilters or {}
 
--- get whether the particular entity bypasses warden's permission behavior
-function Warden.GetEntPermBypass(entOrClass, perm)
-	perm = Warden.GetPermission(perm, true)
-	if not perm then return end
-
-	return Warden.GetClassFilter(entOrClass, perm.KEY)
-end
+Warden.FILTER_NET_SIZE = 11
+Warden.CLASS_FILTER_NET_SIZE = 6
 
 function Warden.PlyBypassesFilters(ply)
 	return Warden.GetServerSetting("admin_level_filter_bypass") <= ply:WardenGetAdminLevel()
@@ -32,7 +27,7 @@ end
 function Warden.IsModelBlocked(model)
 	if not model then return false end
 
-	return Warden.ModelFilters[model] or false
+	return (Warden.ModelFilters[model] or false) ~= Warden.GetServerBool("model_filter_whitelist", false)
 end
 
 function Warden.IsClassBlocked(class)
@@ -47,6 +42,7 @@ function Warden.IsEntityBlocked(ent)
 end
 
 -- check if an ent is filtered
+-- omit key to get entire filter
 -- true == always allow, false == always deny
 function Warden.GetClassFilter(entOrClass, key, noWildCard)
 	if not entOrClass then
@@ -70,7 +66,7 @@ function Warden.GetClassFilter(entOrClass, key, noWildCard)
 	end
 
 	if not noWildCard then
-		filter = Warden.GetClassWCFilter(class, filter)
+		filter = Warden._GetClassWCFilter(class, filter)
 	end
 
 	if key then
@@ -80,11 +76,24 @@ function Warden.GetClassFilter(entOrClass, key, noWildCard)
 	return filter
 end
 
+-- get whether the particular entity bypasses warden's permission behavior
+-- intended to be internal
+function Warden._GetEntPermBypass(entOrClass, perm)
+	perm = Warden.GetPermission(perm, true)
+	if not perm then return end
+
+	local bypass = Warden.GetClassFilter(entOrClass, perm.KEY)
+	if bypass ~= true then return bypass end
+
+	if Warden.GetServerBool("class_filter_bypass", false) then return true end
+end
+
 local wildCards = {}
 local wcCache = {}
 
 -- reset caches when a class is updated
-function Warden.SetClassCache(class, filter)
+-- intended to be internal
+function Warden._SetClassCache(class, filter)
 	wcCache = {}
 
 	if string.Right(class, 1) ~= "*" then return end
@@ -93,7 +102,8 @@ function Warden.SetClassCache(class, filter)
 end
 
 -- reset caches on reload/start
-function Warden.ResetClassCaches()
+-- intended to be internal
+function Warden._ResetClassCaches()
 	for k, v in pairs(Warden.ClassFilters) do
 		if string.Right(k, 1) == "*" then
 			wildCards[k] = v
@@ -104,7 +114,8 @@ function Warden.ResetClassCaches()
 end
 
 -- get the filter of a class derived from wild cards
-function Warden.GetClassWCFilter(class, baseFilter)
+-- intended to be internal
+function Warden._GetClassWCFilter(class, baseFilter)
 	if wcCache[class] then return wcCache[class] end
 
 	local runningFilters = {}
@@ -139,10 +150,10 @@ function Warden.GetClassWCFilter(class, baseFilter)
 end
 
 hook.Add("PostGamemodeLoaded", "WardenWildCards", function()
-	Warden.ResetClassCaches()
+	Warden._ResetClassCaches()
 end)
 
 -- in case of file reload
 if WARDEN_LOADED then
-	Warden.ResetClassCaches()
+	Warden._ResetClassCaches()
 end

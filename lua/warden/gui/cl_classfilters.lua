@@ -1,48 +1,5 @@
 local PANEL = {}
 
--- sets text entry up to work command-line style
-function Warden.NoLoseFocus(panel)
-	panel:SetHistoryEnabled(true)
-
-	function panel:OnKeyCodeTyped(code)
-		self:OnKeyCode(code)
-
-		if code == KEY_ENTER and not self:IsMultiline() and self:GetEnterAllowed() then
-			if IsValid(self.Menu) then
-				self.Menu:Remove()
-			end
-
-			local text = self:GetText()
-
-			local dontExit = true
-			if string.Trim(text) == "" then
-				self:FocusNext()
-				dontExit = nil
-			else
-				self:OnEnter(text)
-				self:AddHistory(text)
-			end
-
-			self:SetText("")
-
-			self.HistoryPos = 0
-
-			return dontExit
-		end
-
-		if self.m_bHistory or IsValid(self.Menu) then
-			if code == KEY_UP then
-				self.HistoryPos = self.HistoryPos - 1
-				self:UpdateFromHistory()
-			end
-			if code == KEY_DOWN or code == KEY_TAB then
-				self.HistoryPos = self.HistoryPos + 1
-				self:UpdateFromHistory()
-			end
-		end
-	end
-end
-
 function PANEL:Init()
 	self:SetMultiSelect(false)
 

@@ -1,5 +1,8 @@
 Warden.Settings = Warden.Settings or {}
 
+Warden.SETTINGS_NET_SIZE = 8
+WARDEN.SETTINGS_OPTION_NET_SIZE = 11
+
 -- get a server setting
 function Warden.GetServerSetting(setting, fallback)
 	local value = Warden.Settings[setting]
@@ -27,6 +30,9 @@ function Warden.GetServerBool(setting, fallback)
 end
 
 Warden.SetDefaultServerSetting("always_target_bots", false)
+Warden.SetDefaultServerSetting("gravgun_punt", true)
+Warden.SetDefaultServerSetting("class_filter_bypass", false)
+Warden.SetDefaultServerSetting("model_filter_whitelist", false)
 
 Warden.SetDefaultServerSetting("freeze_disconnect", true)
 Warden.SetDefaultServerSetting("cleanup_disconnect", true)

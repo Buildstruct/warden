@@ -21,7 +21,7 @@ function Warden.UpdateClassFilter(class, key, state)
 	net.Start("WardenEntFiltering")
 	net.WriteBool(true)
 	net.WriteString(class)
-	net.WriteUInt(table.Count(filter), 6)
+	net.WriteUInt(table.Count(filter), Warden.CLASS_FILTER_NET_SIZE)
 	for k, v in pairs(filter) do
 		net.WriteString(k)
 		net.WriteBool(v)
@@ -44,10 +44,10 @@ function Warden.UpdateModelFilter(model, state)
 end
 
 local function updateClassFilters()
-	local count = net.ReadUInt(11)
+	local count = net.ReadUInt(Warden.FILTER_NET_SIZE)
 	for i = 1, count do
 		local class = net.ReadString()
-		local count1 = net.ReadUInt(6)
+		local count1 = net.ReadUInt(Warden.CLASS_FILTER_NET_SIZE)
 		local filter = {}
 
 		for j = 1, count1 do
@@ -60,12 +60,12 @@ local function updateClassFilters()
 		end
 
 		Warden.ClassFilters[class] = filter
-		Warden.SetClassCache(class, filter)
+		Warden._SetClassCache(class, filter)
 	end
 end
 
 local function updateModelFilters()
-	local count = net.ReadUInt(11)
+	local count = net.ReadUInt(Warden.FILTER_NET_SIZE)
 	for i = 1, count do
 		local key = net.ReadString()
 		local state = net.ReadBool()

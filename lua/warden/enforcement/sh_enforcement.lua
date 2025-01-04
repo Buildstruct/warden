@@ -8,6 +8,10 @@ hook.Add("CanTool", "Warden", function(ply, tr, tool)
 end)
 
 hook.Add("GravGunPunt", "Warden", function(ply, ent)
+	if not Warden.GetServerBool("gravgun_punt", true) and not Warden.PlyBypassesFilters(ply) then
+		return false
+	end
+
 	if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN) then
 		return false
 	end

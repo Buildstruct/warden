@@ -106,6 +106,8 @@ local function serverSettings(panel)
 
 	panel:Help("Configure class filters.")
 
+	setUpCheck(panel:CheckBox("Filters bypass blocked perms"), "class_filter_bypass")
+
 	classFilterPnl = vgui.Create("WardenClassFilters")
 	panel:AddItem(classFilterPnl)
 
@@ -115,6 +117,8 @@ local function serverSettings(panel)
 	panel:ControlHelp("Has basic wildcard support (`*`)")
 
 	panel:Help("Block models from being spawned.")
+
+	setUpCheck(panel:CheckBox("Block list is a whitelist"), "model_filter_whitelist")
 
 	modelFilterPnl = vgui.Create("WardenModelFilters")
 	panel:AddItem(modelFilterPnl)
@@ -139,6 +143,7 @@ local function serverSettings(panel)
 	panel:Help("Configure general server settings.")
 
 	setUpCheck(panel:CheckBox("Players can always affect bots"), "always_target_bots")
+	setUpCheck(panel:CheckBox("Allow gravgun punting"), "gravgun_punt")
 
 	addSpacer(panel)
 
@@ -201,10 +206,10 @@ hook.Add("WardenRepopSetPerms", "Warden", function()
 end)
 
 local function crossBlock(icon, model, class)
-	icon.OldPaintOver = icon.OldPaintOver or icon.PaintOver
+	icon.WardenPaintOver = icon.WardenPaintOver or icon.PaintOver
 
 	function icon.PaintOver(pnl, w, h)
-		pnl:OldPaintOver(w, h)
+		pnl:WardenPaintOver(w, h)
 
 		if not Warden.IsModelBlocked(model) and not Warden.IsClassBlocked(class) then return end
 

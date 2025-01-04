@@ -19,19 +19,13 @@ function Warden.SetServerSetting(setting, value)
 		if not newVal then return end
 	end
 
-	setting = string.sub(setting, 1, 100)
-
-	if table.Count(Warden.Settings) >= 255 and not Warden.Settings[setting] then
-		error("[WARDEN] Too many settings on file?")
-	end
-
 	Warden.Settings[setting] = newVal
 	file.Write("warden/settings.json", util.TableToJSON(Warden.Settings))
 
 	net.Start("WardenAdminSettingChange")
-	net.WriteUInt(1, 8)
+	net.WriteUInt(1, Warden.SETTINGS_NET_SIZE)
 	net.WriteString(setting)
-	net.WriteInt(newVal, 11)
+	net.WriteInt(newVal, WARDEN.SETTINGS_OPTION_NET_SIZE)
 	net.Broadcast()
 end
 
@@ -40,7 +34,7 @@ local function sendAll()
 	net.WriteUInt(table.Count(Warden.Settings), 8)
 	for k, v in pairs(Warden.Settings) do
 		net.WriteString(k)
-		net.WriteInt(v, 11)
+		net.WriteInt(v, WARDEN.SETTINGS_OPTION_NET_SIZE)
 	end
 end
 
@@ -66,7 +60,7 @@ net.Receive("WardenAdminSettingChange", function(_, ply)
 	end
 
 	local setting = net.ReadString()
-	local value = net.ReadInt(11)
+	local value = net.ReadInt(WARDEN.SETTINGS_OPTION_NET_SIZE)
 
 	Warden.SetServerSetting(setting, value)
 end)

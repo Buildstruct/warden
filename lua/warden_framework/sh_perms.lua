@@ -181,7 +181,7 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 
 	if not receiverOwner then return false end
 
-	local bypass = Warden.GetEntPermBypass(granter, perm)
+	local bypass = Warden._GetEntPermBypass(granter, perm)
 	if bypass ~= nil then
 		if bypass then return true end
 		if not IsValid(receiverOwner) or not Warden.PlyBypassesFilters(receiverOwner) then return false end
@@ -223,7 +223,7 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 
 	granterOwner:WardenEnsureSetup()
 
-	return Warden.GetPermStatus(receiverOwner, granterOwner, perm)
+	return Warden._GetPermStatus(receiverOwner, granterOwner, perm)
 end
 
 Warden.HasPermission = Warden.CheckPermission
@@ -301,7 +301,7 @@ end
 
 -- get the permission status for two players
 -- intended to be internal, you probably want CheckPermission instead
-function Warden.GetPermStatus(receiver, granter, perm)
+function Warden._GetPermStatus(receiver, granter, perm)
 	granter:WardenEnsureSetup()
 
 	if not perm:GetEnabled() then return perm:GetDefault() end

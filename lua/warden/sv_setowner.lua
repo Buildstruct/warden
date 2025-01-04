@@ -22,7 +22,7 @@ hook.Add("OnEntityCreated", "Warden", function(ent)
 end)
 
 hook.Add("PlayerInitialSpawn", "Warden", function(ply)
-	for entIndex, _ in pairs(Warden.GetPlayerTable(ply)) do
+	for entIndex, _ in pairs(Warden._GetPlayerTable(ply)) do
 		Warden.SetOwner(Entity(entIndex), ply)
 	end
 

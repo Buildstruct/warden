@@ -5,15 +5,15 @@ hook.Add("InitPostEntity", "Warden", function()
 end)
 
 net.Receive("WardenInitialize", function()
-	local n = net.ReadUInt(8)
+	local n = net.ReadUInt(Warden.PERM_PLY_NET_SIZE)
 	for i = 1, n do
 		local granter = net.ReadString()
 
-		local o = net.ReadUInt(8)
+		local o = net.ReadUInt(Warden.PERM_NET_SIZE)
 		for j = 1, o do
-			local permission = net.ReadUInt(8)
+			local permission = net.ReadUInt(Warden.PERM_NET_SIZE)
 
-			local p = net.ReadUInt(8)
+			local p = net.ReadUInt(Warden.PERM_PLY_NET_SIZE)
 			for k = 1, p do
 				local receiver = net.ReadString()
 
@@ -71,11 +71,11 @@ function Warden.RevokePermission(receiver, keyOrID)
 end
 
 -- determine whether to grant or revoke based on a bool
-function Warden.PermissionRequest(ply, val, keyOrID)
+function Warden.PermissionRequest(receiver, val, keyOrID)
 	if val then
-		Warden.GrantPermission(ply, keyOrID)
+		Warden.GrantPermission(receiver, keyOrID)
 	else
-		Warden.RevokePermission(ply, keyOrID)
+		Warden.RevokePermission(receiver, keyOrID)
 	end
 end
 

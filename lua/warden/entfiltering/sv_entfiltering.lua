@@ -18,11 +18,11 @@ end
 
 local function netFilter(filter)
 	if not filter then
-		net.WriteUInt(0, 6)
+		net.WriteUInt(0, Warden.CLASS_FILTER_NET_SIZE)
 		return
 	end
 
-	net.WriteUInt(table.Count(filter), 6)
+	net.WriteUInt(table.Count(filter), Warden.CLASS_FILTER_NET_SIZE)
 	for k, v in pairs(filter) do
 		net.WriteString(k)
 		net.WriteBool(v)
@@ -44,12 +44,12 @@ function Warden.UpdateClassFilter(class, key, state)
 	end
 
 	Warden.ClassFilters[class] = filter
-	Warden.SetClassCache(class, filter)
+	Warden._SetClassCache(class, filter)
 	file.Write("warden/classfilters.json", util.TableToJSON(Warden.ClassFilters))
 
 	net.Start("WardenEntFiltering")
 	net.WriteBool(true)
-	net.WriteUInt(1, 11)
+	net.WriteUInt(1, Warden.FILTER_NET_SIZE)
 	net.WriteString(class)
 	netFilter(filter)
 	net.Broadcast()
@@ -67,7 +67,7 @@ function Warden.UpdateModelFilter(model, state)
 
 	net.Start("WardenEntFiltering")
 	net.WriteBool(false)
-	net.WriteUInt(1, 11)
+	net.WriteUInt(1, Warden.FILTER_NET_SIZE)
 	net.WriteString(model)
 	net.WriteBool(state or false)
 	net.Broadcast()
@@ -76,7 +76,7 @@ end
 local function sendAll(callback)
 	net.Start("WardenEntFiltering")
 	net.WriteBool(true)
-	net.WriteUInt(table.Count(Warden.ClassFilters), 11)
+	net.WriteUInt(table.Count(Warden.ClassFilters), Warden.FILTER_NET_SIZE)
 	for k, v in pairs(Warden.ClassFilters) do
 		net.WriteString(k)
 		netFilter(v)
@@ -85,7 +85,7 @@ local function sendAll(callback)
 
 	net.Start("WardenEntFiltering")
 	net.WriteBool(false)
-	net.WriteUInt(table.Count(Warden.ModelFilters), 11)
+	net.WriteUInt(table.Count(Warden.ModelFilters), Warden.FILTER_NET_SIZE)
 	for k, v in pairs(Warden.ModelFilters) do
 		net.WriteString(k)
 		net.WriteBool(v)
@@ -116,7 +116,7 @@ net.Receive("WardenEntFiltering", function(_, ply)
 
 	if net.ReadBool() then
 		local class = net.ReadString()
-		local count = net.ReadUInt(6)
+		local count = net.ReadUInt(Warden.CLASS_FILTER_NET_SIZE)
 		local filter = {}
 
 		for j = 1, count do
