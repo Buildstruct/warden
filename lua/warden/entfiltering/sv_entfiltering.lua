@@ -35,7 +35,7 @@ function Warden.UpdateClassFilter(class, key, state)
 	if type(key) == "table" then
 		filter = key
 	elseif key ~= nil then
-		filter = Warden.GetClassFilter(class)
+		filter = Warden.GetClassFilter(class, nil, true)
 		filter[key] = state
 	end
 
@@ -44,6 +44,7 @@ function Warden.UpdateClassFilter(class, key, state)
 	end
 
 	Warden.ClassFilters[class] = filter
+	Warden.SetClassWildCard(class, filter)
 	file.Write("warden/classfilters.json", util.TableToJSON(Warden.ClassFilters))
 
 	net.Start("WardenEntFiltering")

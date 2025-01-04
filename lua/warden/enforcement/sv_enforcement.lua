@@ -95,3 +95,21 @@ hook.Add("PlayerSpawnVehicle", "WardenBlock", function(ply, _, class)
 	if Warden.PlyBypassesFilters(ply) then return end
 	return false
 end)
+
+hook.Add("PlayerSpawnProp", "WardenBlock", function(ply)
+	if not Warden.IsClassBlocked("prop_physics") then return end
+	if Warden.PlyBypassesFilters(ply) then return end
+	return false
+end)
+
+hook.Add("PlayerSpawnRagdoll", "WardenBlock", function(ply)
+	if not Warden.IsClassBlocked("prop_ragdoll") then return end
+	if Warden.PlyBypassesFilters(ply) then return end
+	return false
+end)
+
+hook.Add("PlayerSpawnEffect", "WardenBlock", function(ply)
+	if not Warden.IsClassBlocked("prop_effect") then return end
+	if Warden.PlyBypassesFilters(ply) then return end
+	return false
+end)

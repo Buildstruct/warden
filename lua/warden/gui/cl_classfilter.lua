@@ -66,6 +66,11 @@ function PANEL:RemoveClass(class, dontNet)
 
 	self:RemoveLine(line:GetID())
 	self.ClassList[class] = nil
+
+	if not dontNet then
+		self:SetTall(math.Clamp(self:GetHeaderHeight() + table.Count(self.ClassList) * 17 + 1, 80, 300))
+		self:InvalidateParent(true)
+	end
 end
 
 function PANEL:AddClass(class, filter, dontNet)
@@ -112,7 +117,7 @@ function PANEL:AddClass(class, filter, dontNet)
 	line:SetValue(self.blockCol, check)
 
 	function line.FixChecks(_, filter1)
-		filter1 = filter1 or Warden.GetClassFilter(class)
+		filter1 = filter1 or Warden.GetClassFilter(class, nil, true)
 
 		for k, v in pairs(self.Columns) do
 			if k == 1 then continue end
@@ -134,6 +139,11 @@ function PANEL:AddClass(class, filter, dontNet)
 
 	if filter then
 		line:FixChecks(filter)
+	end
+
+	if not dontNet then
+		self:SetTall(math.Clamp(self:GetHeaderHeight() + table.Count(self.ClassList) * 17 + 1, 80, 300))
+		self:InvalidateParent(true)
 	end
 end
 
@@ -294,7 +304,7 @@ function PANEL1:Init()
 
 			local filter
 			if filterOps then
-				filter = Warden.GetClassFilter(class)
+				filter = Warden.GetClassFilter(class, nil, true)
 				for k, v1 in ipairs(self.List:GetFilterElems()) do
 					local char = string.sub(filterOps, k, k)
 

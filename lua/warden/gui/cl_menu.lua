@@ -76,6 +76,9 @@ local function setUpWang(numWang, setting)
 	end
 end
 
+local classFilterPnl
+local modelFilterPnl
+
 local function serverSettings(panel)
 	checks = {}
 
@@ -101,22 +104,23 @@ local function serverSettings(panel)
 	panel:ControlHelp("WA: does the world have the perm?")
 	panel:ControlHelp("AL: the admin level to bypass the perm")
 
-	panel:Help("Block models from being spawned.")
-
-	local modelFilterPnl = vgui.Create("WardenModelFilters")
-	panel:AddItem(modelFilterPnl)
-
-	panel:ControlHelp("Prefix with `-` to remove model")
-	panel:ControlHelp("Use `,` to do multiple operations")
-
 	panel:Help("Configure class filters.")
 
-	local classFilterPnl = vgui.Create("WardenClassFilters")
+	classFilterPnl = vgui.Create("WardenClassFilters")
 	panel:AddItem(classFilterPnl)
 
 	panel:ControlHelp("Prefix with `-` to remove class")
-	panel:ControlHelp("Use `,` to do multiple operations")
+	panel:ControlHelp("Use `,`/`;` to do multiple operations")
 	panel:ControlHelp("Use `+`/`-`/`=` to quick-set columns")
+	panel:ControlHelp("Has basic wildcard support (`*`)")
+
+	panel:Help("Block models from being spawned.")
+
+	modelFilterPnl = vgui.Create("WardenModelFilters")
+	panel:AddItem(modelFilterPnl)
+
+	panel:ControlHelp("Prefix with `-` to remove model")
+	panel:ControlHelp("Use `,`/`;` to do multiple operations")
 
 	table.insert(checks, function()
 		if IsValid(permSettingsPnl) then
@@ -194,4 +198,111 @@ hook.Add("WardenRepopSetPerms", "Warden", function()
 			setPermPnl:Repopulate()
 		end
 	end)
+end)
+
+local function overrideModelCType(container, obj)
+	local icon = Warden.OldModelCType(container, obj)
+	if not icon then return end
+
+	icon.OpenMenu = function(pnl)
+		if pnl:GetParent() and pnl:GetParent().ContentContainer then
+			container = pnl:GetParent().ContentContainer
+		end
+
+		local _menu = DermaMenu()
+		_menu:AddOption("#spawnmenu.menu.copy", function()
+			SetClipboardText(string.gsub(obj.model, "\\", "/"))
+		end):SetIcon("icon16/page_copy.png")
+
+		_menu:AddOption("#spawnmenu.menu.spawn_with_toolgun", function()
+			RunConsoleCommand("gmod_tool", "creator")
+			RunConsoleCommand("creator_type", "4")
+			RunConsoleCommand("creator_name", obj.model)
+		end):SetIcon("icon16/brick_add.png")
+
+		-- warden additions
+
+		if LocalPlayer():IsSuperAdmin() then
+			local mdl = string.gsub(obj.model, "\\", "/")
+
+			if Warden.IsModelBlocked(mdl) then
+				_menu:AddOption("(Warden) Unblock model", function()
+					if IsValid(modelFilterPnl) then
+						modelFilterPnl:RemoveModel(mdl)
+					else
+						Warden.UnblockModel(mdl)
+					end
+				end):SetIcon("icon16/accept.png")
+			else
+				_menu:AddOption("(Warden) Block model", function()
+					if IsValid(modelFilterPnl) then
+						modelFilterPnl:AddModel(mdl)
+					else
+						Warden.BlockModel(mdl)
+					end
+				end):SetIcon("icon16/delete.png")
+			end
+		end
+
+		-- end warden additions
+
+		local submenu, submenu_opt = _menu:AddSubMenu("#spawnmenu.menu.rerender", function()
+			if IsValid(pnl) then pnl:RebuildSpawnIcon() end
+		end)
+		submenu_opt:SetIcon("icon16/picture_save.png")
+
+		submenu:AddOption("#spawnmenu.menu.rerender_this", function()
+			if IsValid(pnl) then pnl:RebuildSpawnIcon() end
+		end):SetIcon("icon16/picture.png")
+		submenu:AddOption("#spawnmenu.menu.rerender_all", function()
+			if IsValid(container) then container:RebuildAll() end
+		end):SetIcon("icon16/pictures.png")
+
+		_menu:AddOption("#spawnmenu.menu.edit_icon", function()
+			if not IsValid(pnl) then return end
+
+			local editor = vgui.Create("IconEditor")
+			editor:SetIcon(pnl)
+			editor:Refresh()
+			editor:MakePopup()
+			editor:Center()
+		end):SetIcon("icon16/pencil.png")
+
+		-- Do not allow removal/size changes from read only panels
+		if IsValid(pnl:GetParent()) and pnl:GetParent().GetReadOnly and pnl:GetParent():GetReadOnly() then
+			_menu:Open()
+			return
+		end
+
+		pnl:InternalAddResizeMenu(_menu, function(w, h)
+			if not IsValid(pnl) then return end
+
+			pnl:SetSize(w, h)
+			pnl:InvalidateLayout(true)
+			container:OnModified()
+			container:Layout()
+			pnl:SetModel(obj.model, obj.skin or 0, obj.body)
+		end)
+
+		_menu:AddSpacer()
+		_menu:AddOption("#spawnmenu.menu.delete", function()
+			if not IsValid(pnl) then return end
+
+			pnl:Remove()
+			hook.Run("SpawnlistContentChanged")
+		end):SetIcon("icon16/bin_closed.png")
+
+		_menu:Open()
+	end
+
+	return icon
+end
+
+if WARDEN_LOADED and Warden.OldModelCType then
+	spawnmenu.AddContentType("model", overrideModelCType)
+end
+
+hook.Add("PostGamemodeLoaded", "WardenSpawnmenu", function()
+	Warden.OldModelCType = spawnmenu.GetContentType("model")
+	spawnmenu.AddContentType("model", overrideModelCType)
 end)
