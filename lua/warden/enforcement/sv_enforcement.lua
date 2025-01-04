@@ -1,8 +1,3 @@
-local USE_EXCEPTIONS = {
-	mediaplayer_tv = true,
-	mediaplayer_tv_ext = true
-}
-
 hook.Add("GravGunPickupAllowed", "Warden", function(ply, ent)
 	if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_GRAVGUN) then
 		return false
@@ -10,8 +5,6 @@ hook.Add("GravGunPickupAllowed", "Warden", function(ply, ent)
 end)
 
 hook.Add("PlayerUse", "Warden", function(ply, ent)
-	if USE_EXCEPTIONS[ent:GetClass()] or ent.AlwaysUsable then return end
-
 	if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_USE) then
 		return false
 	end

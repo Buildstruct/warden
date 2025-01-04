@@ -1,7 +1,6 @@
 local PANEL = {}
 
 function PANEL:Init()
-	self:SetHeaderHeight(20)
 	self:SetMultiSelect(false)
 
 	self.PermList = {}
@@ -10,22 +9,12 @@ function PANEL:Init()
 	self:Repopulate()
 end
 
-function PANEL:NewCol(name, desc)
-	local col = self:AddColumn(name)
-
-	col:SetTooltip(desc)
-	col:SetTooltipDelay(0)
-	col:SetFixedWidth(30)
-
-	return col
-end
-
 function PANEL:MakeColumns()
 	self:AddColumn("permission", 1)
-	self:NewCol("ON", "enabled")
-	self:NewCol("DF", "default")
-	self:NewCol("WA", "world access")
-	self:NewCol("AL", "admin level")
+	self:NewSettingCol("ON", "enabled")
+	self:NewSettingCol("DF", "default")
+	self:NewSettingCol("WA", "world access")
+	self:NewSettingCol("AL", "admin level")
 end
 
 function PANEL:NewCheck(line, num)
@@ -45,6 +34,8 @@ end
 
 function PANEL:SetUpLine(key, perm)
 	local line = self:AddLine("      " .. perm:GetName())
+
+	line:SetTooltip(perm:GetName())
 
 	local name = line.Columns[1]
 	function name.PaintOver(_, w, h)
@@ -82,7 +73,7 @@ function PANEL:SetUpLine(key, perm)
 	adminLevel.box:HideWang()
 
 	function adminLevel.box.OnValueChanged(_, val)
-		local newVal = math.Clamp(val, 1, 99)
+		local newVal = math.Clamp(math.floor(val), 1, 99)
 		perm:SetAdminLevel(newVal)
 		line:SetSortValue(5, newVal)
 	end
@@ -141,34 +132,9 @@ function PANEL:Repopulate()
 		v:FixChecks()
 	end
 
-	self:SetTall(self:GetHeaderHeight() + table.Count(self.PermList) * 17 + 1)
+	self:SetTall(math.Clamp(self:GetHeaderHeight() + table.Count(self.PermList) * 17 + 1, 80, 300))
 end
 
--- override
-function PANEL:FixColumnsLayout()
-	local numCols = table.Count(self.Columns)
-	if numCols < 1 then return end
-
-	local totalWidth = 0
-	for k, col in pairs(self.Columns) do
-		if k == 1 then continue end
-
-		totalWidth = totalWidth + col:GetWide()
-	end
-
-	local nameCol = self.Columns[1]
-	if nameCol then
-		nameCol:SetWidth(self.pnlCanvas:GetWide() - totalWidth)
-	end
-
-	local x = 0
-	for k, col in pairs(self.Columns) do
-		col.x = x
-		x = x + col:GetWide()
-
-		col:SetTall(self:GetHeaderHeight())
-		col:SetVisible(not self:GetHideHeaders())
-	end
-end
+Warden.AddDListElems(PANEL)
 
 vgui.Register("WardenPermSettings", PANEL, "DListView")

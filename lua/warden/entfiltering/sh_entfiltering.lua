@@ -22,11 +22,11 @@ function Warden.UnblockClass(class)
 end
 
 function Warden.BlockModel(model)
-	Warden.UpdateModelFilter(model, true)
+	return Warden.UpdateModelFilter(model, true)
 end
 
 function Warden.UnblockModel(model)
-	Warden.UpdateModelFilter(model)
+	return Warden.UpdateModelFilter(model)
 end
 
 function Warden.IsModelBlocked(model)

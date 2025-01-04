@@ -9,7 +9,7 @@ function Warden.SetServerSetting(setting, value)
 
 	if not LocalPlayer():IsSuperAdmin() then
 		LocalPlayer():ChatPrint("Only superadmins can change Warden's settings.")
-		return
+		return true
 	end
 
 	local newVal

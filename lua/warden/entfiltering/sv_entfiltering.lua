@@ -17,6 +17,11 @@ do
 end
 
 local function netFilter(filter)
+	if not filter then
+		net.WriteUInt(0, 6)
+		return
+	end
+
 	net.WriteUInt(table.Count(filter), 6)
 	for k, v in pairs(filter) do
 		net.WriteString(k)
@@ -26,10 +31,19 @@ end
 
 -- update a filter for a class
 function Warden.UpdateClassFilter(class, key, state)
-	Warden.ClassFilters[class] = Warden.ClassFilters[class] or {}
-	local filter = Warden.ClassFilters[class]
+	local filter
+	if type(key) == "table" then
+		filter = key
+	elseif key ~= nil then
+		filter = Warden.GetClassFilter(class)
+		filter[key] = state
+	end
 
-	filter[key] = state
+	if table.IsEmpty(filter) then
+		filter = nil
+	end
+
+	Warden.ClassFilters[class] = filter
 	file.Write("warden/classfilters.json", util.TableToJSON(Warden.ClassFilters))
 
 	net.Start("WardenEntFiltering")
@@ -101,9 +115,15 @@ net.Receive("WardenEntFiltering", function(_, ply)
 
 	if net.ReadBool() then
 		local class = net.ReadString()
-		local key = net.ReadString()
-		local state = net.ReadBool()
-		Warden.UpdateClassFilter(class, key, state)
+		local count = net.ReadUInt(6)
+		local filter = {}
+
+		for j = 1, count do
+			local key = net.ReadString()
+			filter[key] = net.ReadBool()
+		end
+
+		Warden.UpdateClassFilter(class, filter)
 	else
 		local model = net.ReadString()
 		local state = net.ReadBool()

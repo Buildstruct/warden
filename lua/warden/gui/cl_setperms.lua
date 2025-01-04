@@ -9,66 +9,7 @@ function PANEL:Init()
 	self.PlyList = {}
 
 	self:AddColumn("name", 1)
-
 	self:Repopulate()
-
-	self:SortByColumn(1)
-end
-
-function PANEL:NewPermCol(id, perm)
-	local col = self:AddColumn("")
-	self.PermList[id] = col
-	col.ID = id
-
-	col:SetTooltip(perm:GetName())
-	col:SetTooltipDelay(0)
-	col:SetFixedWidth(20)
-
-	function col.Header.PaintOver(_, w, h)
-		surface.SetMaterial(perm:GetIcon())
-		surface.SetDrawColor(255, 255, 255)
-		surface.DrawTexturedRect(w / 2 - 8, h / 2 - 8, 16, 16)
-	end
-end
-
-function PANEL:ResetColumns()
-	local changed = false
-
-	for k, v in pairs(self.PermList) do
-		if not IsValid(v) then
-			self.PermList[k] = nil
-			changed = true
-		elseif not Warden.GetPermission(v.ID) then
-			v:Remove()
-			self.PermList[k] = nil
-			changed = true
-		end
-	end
-
-	for k, v in pairs(self._Perms) do
-		if self.PermList[k] then continue end
-
-		self:NewPermCol(k, v)
-		changed = true
-	end
-
-	if changed then
-		local c = table.Count(self._Perms)
-		local width = 20 + math.max(5 * (6 - c), 0)
-
-		for k, v in pairs(self.Columns) do
-			if not IsValid(v) then
-				self.Columns[k] = nil
-				continue
-			end
-		end
-
-		for k, v in pairs(self.PermList) do
-			v:SetFixedWidth(width)
-		end
-	end
-
-	return changed
 end
 
 local cross = Material("icon16/cross.png")
@@ -103,6 +44,7 @@ local magenta = Color(255, 192, 255)
 
 function PANEL:MakeGlobalLine()
 	local line = self:AddLine("[[GLOBAL]]")
+	line.IsGlobal = true
 
 	line:SetSortValue(1, -1)
 
@@ -143,6 +85,10 @@ end
 
 function PANEL:MakePlyLine(ply)
 	local line = self:AddLine(ply:GetName())
+	line.Name = ply:GetName()
+	line.SteamID = ply:SteamID()
+
+	line:SetTooltip(line.SteamID)
 
 	for k, v in pairs(self.Columns) do
 		if k == 1 then continue end
@@ -176,8 +122,7 @@ end
 
 function PANEL:Repopulate()
 	self._Perms = Warden.GetAllPermissions()
-
-	local changed = self:ResetColumns()
+	local changed = self:SetPermColumns()
 
 	if changed then
 		for k, v in pairs(self.PlyList) do
@@ -223,33 +168,6 @@ function PANEL:Repopulate()
 end
 
 -- override
-function PANEL:FixColumnsLayout()
-	local numCols = table.Count(self.Columns)
-	if numCols < 1 then return end
-
-	local totalWidth = 0
-	for k, col in pairs(self.Columns) do
-		if k == 1 then continue end
-
-		totalWidth = totalWidth + math.ceil(col:GetWide())
-	end
-
-	local nameCol = self.Columns[1]
-	if nameCol then
-		nameCol:SetWidth(self.pnlCanvas:GetWide() - totalWidth)
-	end
-
-	local x = 0
-	for k, col in pairs(self.Columns) do
-		col.x = x
-		x = x + math.ceil(col:GetWide())
-
-		col:SetTall(math.ceil(self:GetHeaderHeight()))
-		col:SetVisible(not self:GetHideHeaders())
-	end
-end
-
--- override
 function PANEL:SortByColumn(cID, descending)
 	table.sort(self.Sorted, function(a, b)
 		local aval = a:GetSortValue(cID) or a:GetColumnText(cID)
@@ -270,5 +188,23 @@ function PANEL:SortByColumn(cID, descending)
 	self:SetDirty(true)
 	self:InvalidateLayout()
 end
+
+function PANEL:OnRowRightClick(_, line)
+	if line.IsGlobal then return end
+
+	local _menu = DermaMenu()
+
+	_menu:AddOption("Copy SteamID", function()
+		SetClipboardText(line.SteamID)
+	end):SetIcon("icon16/page_copy.png")
+
+	_menu:AddOption("Copy Name", function()
+		self:RemoveClass(line.Name)
+	end):SetIcon("icon16/delete.png")
+
+	_menu:Open()
+end
+
+Warden.AddDListElems(PANEL)
 
 vgui.Register("WardenSetPerms", PANEL, "DListView")

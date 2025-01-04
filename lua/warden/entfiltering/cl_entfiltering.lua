@@ -5,14 +5,27 @@ Warden.ModelFilters = Warden.ModelFilters or {}
 function Warden.UpdateClassFilter(class, key, state)
 	if not LocalPlayer():IsSuperAdmin() then
 		LocalPlayer():ChatPrint("Only superadmins can change Warden's settings.")
-		return
+		return true
+	end
+
+	local filter
+	if type(key) == "table" then
+		filter = key
+	elseif key == nil then
+		filter = {}
+	else
+		filter = Warden.GetClassFilter(class)
+		filter[key] = state
 	end
 
 	net.Start("WardenEntFiltering")
 	net.WriteBool(true)
 	net.WriteString(class)
-	net.WriteString(key)
-	net.WriteBool(state or false)
+	net.WriteUInt(table.Count(filter), 6)
+	for k, v in pairs(filter) do
+		net.WriteString(k)
+		net.WriteBool(v)
+	end
 	net.SendToServer()
 end
 
@@ -20,7 +33,7 @@ end
 function Warden.UpdateModelFilter(model, state)
 	if not LocalPlayer():IsSuperAdmin() then
 		LocalPlayer():ChatPrint("Only superadmins can change Warden's settings.")
-		return
+		return true
 	end
 
 	net.Start("WardenEntFiltering")
@@ -33,16 +46,20 @@ end
 local function updateClassFilters()
 	local count = net.ReadUInt(11)
 	for i = 1, count do
-		local key = net.ReadString()
+		local class = net.ReadString()
 		local count1 = net.ReadUInt(6)
 		local filter = {}
 
 		for j = 1, count1 do
-			local key1 = net.ReadString()
-			filter[key1] = net.ReadBool()
+			local key = net.ReadString()
+			filter[key] = net.ReadBool()
 		end
 
-		Warden.ClassFilters[key] = filter
+		if table.IsEmpty(filter) then
+			filter = nil
+		end
+
+		Warden.ClassFilters[class] = filter
 	end
 end
 

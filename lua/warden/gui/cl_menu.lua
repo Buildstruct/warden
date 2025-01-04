@@ -3,7 +3,7 @@ hook.Add("AddToolMenuCategories", "Warden", function()
 end)
 
 local setPermPnl
-local permSettingsPnl
+local checks = {}
 
 local function addSpacer(panel)
 	local spacer = vgui.Create("Panel")
@@ -45,8 +45,6 @@ local function entInfo(panel)
 	combo:AddChoice("Large", 2)
 end
 
-local checks = {}
-
 local function setUpCheck(check, setting)
 	table.insert(checks, function()
 		if not IsValid(check) then return end
@@ -58,8 +56,30 @@ local function setUpCheck(check, setting)
 	end
 end
 
+local function setUpWang(numWang, setting)
+	numWang:HideWang()
+
+	function numWang:PerformLayout()
+		self:SetTall(16)
+		self:AlignBottom()
+	end
+
+	table.insert(checks, function()
+		if not IsValid(numWang) then return end
+		numWang:SetText(Warden.GetServerSetting(setting))
+	end)
+
+	local min, max = numWang:GetMin(), numWang:GetMax()
+
+	function numWang:OnValueChanged(val)
+		Warden.SetServerSetting(setting, math.Clamp(math.floor(val), min, max))
+	end
+end
+
 local function serverSettings(panel)
-	panel:Help("Configure the server's settings.")
+	checks = {}
+
+	panel:Help("Configure the server's entity permissions.")
 
 	panel:SetLabel("Server Settings (superadmins only)")
 
@@ -73,10 +93,46 @@ local function serverSettings(panel)
 		surface.DrawOutlinedRect(0, headerHeight, w, h - headerHeight, 2)
 	end
 
-	permSettingsPnl = vgui.Create("WardenPermSettings")
+	local permSettingsPnl = vgui.Create("WardenPermSettings")
 	panel:AddItem(permSettingsPnl)
 
-	checks = {}
+	panel:ControlHelp("ON: is the perm enabled?")
+	panel:ControlHelp("DF: is the perm on by default?")
+	panel:ControlHelp("WA: does the world have the perm?")
+	panel:ControlHelp("AL: the admin level to bypass the perm")
+
+	panel:Help("Block models from being spawned.")
+
+	local modelFilterPnl = vgui.Create("WardenModelFilters")
+	panel:AddItem(modelFilterPnl)
+
+	panel:ControlHelp("Prefix with `-` to remove model")
+	panel:ControlHelp("Use `,` to do multiple operations")
+
+	panel:Help("Configure class filters.")
+
+	local classFilterPnl = vgui.Create("WardenClassFilters")
+	panel:AddItem(classFilterPnl)
+
+	panel:ControlHelp("Prefix with `-` to remove class")
+	panel:ControlHelp("Use `,` to do multiple operations")
+	panel:ControlHelp("Use `+`/`-`/`=` to quick-set columns")
+
+	table.insert(checks, function()
+		if IsValid(permSettingsPnl) then
+			permSettingsPnl:Repopulate()
+		end
+
+		if IsValid(modelFilterPnl) then
+			modelFilterPnl:Repopulate()
+		end
+
+		if IsValid(classFilterPnl) then
+			classFilterPnl:Repopulate()
+		end
+	end)
+
+	panel:Help("Configure general server settings.")
 
 	setUpCheck(panel:CheckBox("Players can always affect bots"), "always_target_bots")
 
@@ -108,22 +164,8 @@ local function serverSettings(panel)
 
 	setUpCheck(panel:CheckBox("Admin level needs admin"), "admin_level_needs_admin")
 
-	local numWang = panel:NumberWang("Default admin level", nil, 0, 99, 0)
-	numWang:HideWang()
-
-	function numWang:PerformLayout()
-		self:SetTall(16)
-		self:AlignBottom()
-	end
-
-	table.insert(checks, function()
-		if not IsValid(numWang) then return end
-		numWang:SetText(Warden.GetServerSetting("default_admin_level"))
-	end)
-
-	function numWang:OnValueChanged(val)
-		Warden.SetServerSetting("default_admin_level", math.Clamp(val, 0, 99))
-	end
+	setUpWang(panel:NumberWang("Default admin level", nil, 0, 99, 0), "default_admin_level")
+	setUpWang(panel:NumberWang("AL to bypass filters", nil, 1, 99, 0), "admin_level_filter_bypass")
 
 	for _, v in ipairs(checks) do
 		v()
@@ -139,10 +181,6 @@ end)
 hook.Add("SpawnMenuOpened", "Warden", function()
 	if IsValid(setPermPnl) then
 		setPermPnl:Repopulate()
-	end
-
-	if IsValid(permSettingsPnl) then
-		permSettingsPnl:Repopulate()
 	end
 
 	for _, v in ipairs(checks) do
