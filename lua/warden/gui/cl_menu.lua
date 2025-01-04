@@ -200,18 +200,70 @@ hook.Add("WardenRepopSetPerms", "Warden", function()
 	end)
 end)
 
+local function crossBlock(icon, model, class)
+	icon.OldPaintOver = icon.OldPaintOver or icon.PaintOver
+
+	function icon.PaintOver(pnl, w, h)
+		pnl:OldPaintOver(w, h)
+
+		if not Warden.IsModelBlocked(model) and not Warden.IsClassBlocked(class) then return end
+
+		local r = math.min(w, h) * 0.5
+		local cX, cY = w / 2, h / 2
+
+		local verts = {
+			{ x = 0.366, y = 0 },
+			{ x = 0.866, y = 0.5 },
+			{ x = 0.5, y = 0.866 },
+			{ x = 0, y = 0.366 },
+			{ x = -0.5, y = 0.866 },
+			{ x = -0.866, y = 0.5 },
+			{ x = -0.366, y = 0 },
+			{ x = -0.866, y = -0.5 },
+			{ x = -0.5, y = -0.866 },
+			{ x = 0, y = -0.366 },
+			{ x = 0.5, y = -0.866 },
+			{ x = 0.866, y = -0.5 },
+			{ x = 0.366, y = 0 }
+		}
+
+		for _, v in ipairs(verts) do
+			v.x = v.x * r + cX
+			v.y = v.y * r + cY
+		end
+
+		surface.SetDrawColor(255, 0, 0, 96)
+		draw.NoTexture()
+		surface.DrawPoly(verts)
+	end
+end
+
 local function overrideModelCType(container, obj)
 	local icon = Warden.OldModelCType(container, obj)
 	if not icon then return end
 
-	icon.OpenMenu = function(pnl)
+	--[[ unreliable clientside it seems
+	local class = "prop_effect"
+	if util.IsValidRagdoll(icon:GetModelName()) then
+		class = "prop_ragdoll"
+	elseif util.IsValidProp(icon:GetModelName()) then
+		class = "prop_physics"
+	end
+	--]]
+
+	local mdl = string.gsub(obj.model, "\\", "/")
+
+	crossBlock(icon, mdl, "prop_")
+
+	-- override
+	function icon.OpenMenu(pnl)
 		if pnl:GetParent() and pnl:GetParent().ContentContainer then
 			container = pnl:GetParent().ContentContainer
 		end
 
 		local _menu = DermaMenu()
 		_menu:AddOption("#spawnmenu.menu.copy", function()
-			SetClipboardText(string.gsub(obj.model, "\\", "/"))
+			SetClipboardText(mdl)
 		end):SetIcon("icon16/page_copy.png")
 
 		_menu:AddOption("#spawnmenu.menu.spawn_with_toolgun", function()
@@ -223,8 +275,6 @@ local function overrideModelCType(container, obj)
 		-- warden additions
 
 		if LocalPlayer():IsSuperAdmin() then
-			local mdl = string.gsub(obj.model, "\\", "/")
-
 			if Warden.IsModelBlocked(mdl) then
 				_menu:AddOption("(Warden) Unblock model", function()
 					if IsValid(modelFilterPnl) then
@@ -298,11 +348,43 @@ local function overrideModelCType(container, obj)
 	return icon
 end
 
-if WARDEN_LOADED and Warden.OldModelCType then
-	spawnmenu.AddContentType("model", overrideModelCType)
+local function overrideGenericCType(container, obj, func)
+	local icon = func(container, obj)
+	if not icon then return end
+
+	crossBlock(icon, nil, obj.spawnname)
+
+	return icon
+end
+
+local cTypes = { "entity", "vehicle", "npc", "weapon" }
+local oldCFuncs = {}
+
+local function doOverrides()
+	for _, v in ipairs(cTypes) do
+		if not oldCFuncs[v] then continue end
+
+		spawnmenu.AddContentType(v, function(container, obj)
+			return overrideGenericCType(container, obj, oldCFuncs[v])
+		end)
+	end
+end
+
+if WARDEN_LOADED then
+	if Warden.OldModelCType then
+		spawnmenu.AddContentType("model", overrideModelCType)
+	end
+
+	doOverrides()
 end
 
 hook.Add("PostGamemodeLoaded", "WardenSpawnmenu", function()
 	Warden.OldModelCType = spawnmenu.GetContentType("model")
 	spawnmenu.AddContentType("model", overrideModelCType)
+
+	for _, v in ipairs(cTypes) do
+		oldCFuncs[v] = spawnmenu.GetContentType(v)
+	end
+
+	doOverrides()
 end)

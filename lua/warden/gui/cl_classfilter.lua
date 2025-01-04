@@ -51,8 +51,8 @@ function PANEL:Init()
 
 	self:AddColumn("class", 1)
 
-	local col = self:NewSettingCol("BL", "block from spawning")
-	col.KEY = "_block"
+	local col = self:NewSettingCol("SP", "allow spawning")
+	col.KEY = "_allow"
 	self.blockCol = col:GetColumnID()
 
 	self:Repopulate()
@@ -95,26 +95,7 @@ function PANEL:AddClass(class, filter, dontNet)
 		self:PermCheck(line, class, v.KEY, v:GetColumnID())
 	end
 
-	local check = vgui.Create("Panel")
-	check.box = check:Add("DCheckBox")
-	check.KEY = "_block"
-
-	check.ApplySchemeSettings = function() end
-
-	function check.box.OnChange(_, val)
-		if not val then
-			val = nil
-		end
-
-		Warden.UpdateClassFilter(class, "_block", val)
-		line:SetSortValue(self.blockCol, val and 1 or 0)
-	end
-
-	function check.box.PerformLayout(_, val)
-		check.box:Center()
-	end
-
-	line:SetValue(self.blockCol, check)
+	self:PermCheck(line, class, "_allow", self.blockCol)
 
 	function line.FixChecks(_, filter1)
 		filter1 = filter1 or Warden.GetClassFilter(class, nil, true)
@@ -128,7 +109,7 @@ function PANEL:AddClass(class, filter, dontNet)
 			local sort = 0
 			if check1.box:GetChecked() then
 				sort = 1
-			elseif check1.box:GetChecked() == false and check1.KEY ~= "_block" then
+			elseif check1.box:GetChecked() == false then
 				sort = -1
 			end
 
@@ -309,7 +290,7 @@ function PANEL1:Init()
 					local char = string.sub(filterOps, k, k)
 
 					if char == "-" then
-						filter[v1] = v1 == "_block"
+						filter[v1] = false
 					elseif char == "+" then
 						filter[v1] = true
 					elseif char == "=" then

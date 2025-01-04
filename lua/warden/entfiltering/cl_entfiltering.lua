@@ -60,7 +60,7 @@ local function updateClassFilters()
 		end
 
 		Warden.ClassFilters[class] = filter
-		Warden.SetClassWildCard(class, filter)
+		Warden.SetClassCache(class, filter)
 	end
 end
 

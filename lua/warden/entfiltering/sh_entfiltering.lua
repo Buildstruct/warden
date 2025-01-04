@@ -14,11 +14,11 @@ function Warden.PlyBypassesFilters(ply)
 end
 
 function Warden.BlockClass(class)
-	Warden.UpdateClassFilter(class, "_block", true)
+	Warden.UpdateClassFilter(class, "_allow", false)
 end
 
 function Warden.UnblockClass(class)
-	Warden.UpdateClassFilter(class, "_block")
+	Warden.UpdateClassFilter(class, "_allow")
 end
 
 function Warden.BlockModel(model)
@@ -30,11 +30,16 @@ function Warden.UnblockModel(model)
 end
 
 function Warden.IsModelBlocked(model)
+	if not model then return false end
+
 	return Warden.ModelFilters[model] or false
 end
 
 function Warden.IsClassBlocked(class)
-	return Warden.GetClassFilter(class, "_block") or false
+	local allow = Warden.GetClassFilter(class, "_allow")
+	if allow == nil then return false end
+
+	return not allow
 end
 
 function Warden.IsEntityBlocked(ent)
@@ -43,7 +48,12 @@ end
 
 -- check if an ent is filtered
 -- true == always allow, false == always deny
-function Warden.GetClassFilter(entOrClass, key, nofilter)
+function Warden.GetClassFilter(entOrClass, key, noWildCard)
+	if not entOrClass then
+		if not key then return {} end
+		return
+	end
+
 	local class = entOrClass
 	if type(entOrClass) ~= "string" then
 		if not IsValid(entOrClass) then
@@ -56,15 +66,10 @@ function Warden.GetClassFilter(entOrClass, key, nofilter)
 
 	local filter = Warden.ClassFilters[class]
 	if not filter then
-		if not key then
-			return nofilter and {} or Warden.GetClassWCFilter(class)
-		end
-
-		if nofilter then return end
-		return Warden.GetClassWCFilter(class)[key]
+		filter = {}
 	end
 
-	if not nofilter then
+	if not noWildCard then
 		filter = Warden.GetClassWCFilter(class, filter)
 	end
 
@@ -78,16 +83,17 @@ end
 local wildCards = {}
 local wcCache = {}
 
--- add to wild card cache if a class has a wild card
-function Warden.SetClassWildCard(wc, filter)
-	if string.Right(wc, 1) ~= "*" then return end
-
+-- reset caches when a class is updated
+function Warden.SetClassCache(class, filter)
 	wcCache = {}
-	wildCards[wc] = filter
+
+	if string.Right(class, 1) ~= "*" then return end
+
+	wildCards[class] = filter
 end
 
--- refresh wild card cache
-function Warden.ResetClassWildCards()
+-- reset caches on reload/start
+function Warden.ResetClassCaches()
 	for k, v in pairs(Warden.ClassFilters) do
 		if string.Right(k, 1) == "*" then
 			wildCards[k] = v
@@ -133,10 +139,10 @@ function Warden.GetClassWCFilter(class, baseFilter)
 end
 
 hook.Add("PostGamemodeLoaded", "WardenWildCards", function()
-	Warden.ResetClassWildCards()
+	Warden.ResetClassCaches()
 end)
 
 -- in case of file reload
 if WARDEN_LOADED then
-	Warden.ResetClassWildCards()
+	Warden.ResetClassCaches()
 end

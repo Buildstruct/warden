@@ -44,7 +44,7 @@ function Warden.UpdateClassFilter(class, key, state)
 	end
 
 	Warden.ClassFilters[class] = filter
-	Warden.SetClassWildCard(class, filter)
+	Warden.SetClassCache(class, filter)
 	file.Write("warden/classfilters.json", util.TableToJSON(Warden.ClassFilters))
 
 	net.Start("WardenEntFiltering")
