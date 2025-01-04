@@ -243,6 +243,26 @@ local function crossBlock(icon, model, class)
 	end
 end
 
+local function modelFilter(mdl, add)
+	if Warden.GetServerBool("model_filter_whitelist", false) then
+		add = not add
+	end
+
+	if add then
+		if IsValid(modelFilterPnl) then
+			modelFilterPnl:AddModel(mdl)
+		else
+			Warden.BlockModel(mdl)
+		end
+	else
+		if IsValid(modelFilterPnl) then
+			modelFilterPnl:RemoveModel(mdl)
+		else
+			Warden.UnblockModel(mdl)
+		end
+	end
+end
+
 local function overrideModelCType(container, obj)
 	local icon = Warden.OldModelCType(container, obj)
 	if not icon then return end
@@ -258,7 +278,7 @@ local function overrideModelCType(container, obj)
 
 	local mdl = string.gsub(obj.model, "\\", "/")
 
-	crossBlock(icon, mdl, "prop_")
+	crossBlock(icon, mdl, "prop_*")
 
 	-- override
 	function icon.OpenMenu(pnl)
@@ -282,19 +302,11 @@ local function overrideModelCType(container, obj)
 		if LocalPlayer():IsSuperAdmin() then
 			if Warden.IsModelBlocked(mdl) then
 				_menu:AddOption("(Warden) Unblock model", function()
-					if IsValid(modelFilterPnl) then
-						modelFilterPnl:RemoveModel(mdl)
-					else
-						Warden.UnblockModel(mdl)
-					end
+					modelFilter(mdl, false)
 				end):SetIcon("icon16/accept.png")
 			else
 				_menu:AddOption("(Warden) Block model", function()
-					if IsValid(modelFilterPnl) then
-						modelFilterPnl:AddModel(mdl)
-					else
-						Warden.BlockModel(mdl)
-					end
+					modelFilter(mdl, true)
 				end):SetIcon("icon16/delete.png")
 			end
 		end
@@ -366,6 +378,10 @@ local cTypes = { "entity", "vehicle", "npc", "weapon" }
 local oldCFuncs = {}
 
 local function doOverrides()
+	if Warden.OldModelCType then
+		spawnmenu.AddContentType("model", overrideModelCType)
+	end
+
 	for _, v in ipairs(cTypes) do
 		if not oldCFuncs[v] then continue end
 
@@ -376,16 +392,11 @@ local function doOverrides()
 end
 
 if WARDEN_LOADED then
-	if Warden.OldModelCType then
-		spawnmenu.AddContentType("model", overrideModelCType)
-	end
-
 	doOverrides()
 end
 
 hook.Add("PostGamemodeLoaded", "WardenSpawnmenu", function()
 	Warden.OldModelCType = spawnmenu.GetContentType("model")
-	spawnmenu.AddContentType("model", overrideModelCType)
 
 	for _, v in ipairs(cTypes) do
 		oldCFuncs[v] = spawnmenu.GetContentType(v)

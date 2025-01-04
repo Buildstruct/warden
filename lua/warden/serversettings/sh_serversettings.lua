@@ -1,7 +1,7 @@
 Warden.Settings = Warden.Settings or {}
 
 Warden.SETTINGS_NET_SIZE = 8
-WARDEN.SETTINGS_OPTION_NET_SIZE = 11
+Warden.SETTINGS_OPTION_NET_SIZE = 11
 
 -- get a server setting
 function Warden.GetServerSetting(setting, fallback)
