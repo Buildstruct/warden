@@ -1,0 +1,14 @@
+{
+    "ignore": [
+        "*.git*",
+        "*.jpg",
+        ".vscode/settings.json"
+    ],
+    "tags": [
+        "build"
+    ],
+    "title": "Warden - Prop Protection",
+    "type": "tool",
+    "workshopid": 0,
+    "default_changelog": "finally"
+}

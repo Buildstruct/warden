@@ -2,27 +2,45 @@ util.AddNetworkString("WardenAdminLevel")
 
 local PLAYER = FindMetaTable("Player")
 
-function Warden.FreezeEntities(steamID)
+function Warden.FreezeEntities(plyOrID)
 	local count = 0
-	for _, ent in ipairs(Warden.GetOwnedEntities(steamID)) do
+	for _, ent in ipairs(Warden.GetOwnedEntities(plyOrID)) do
 		for i = 0, ent:GetPhysicsObjectCount() - 1 do
 			local phys = ent:GetPhysicsObjectNum(i)
 			phys:EnableMotion(false)
 		end
 		count = count + 1
 	end
-	hook.Run("WardenFreeze", steamID, count)
+	hook.Run("WardenFreeze", Warden.PossibleSteamID(plyOrID), count)
+end
+function PLAYER:WardenFreezeEntities()
+	Warden.FreezeEntities(self)
 end
 
-function Warden.CleanupEntities(steamID)
+function Warden.CleanupEntities(plyOrID)
 	local count = 0
-	for _, ent in ipairs(Warden.GetOwnedEntities(steamID)) do
+	for _, ent in ipairs(Warden.GetOwnedEntities(plyOrID)) do
 		ent:Remove()
 	end
 	count = count + 1
 
-	hook.Run("WardenCleanup", steamID, count)
+	hook.Run("WardenCleanup", Warden.PossibleSteamID(plyOrID), count)
 	return count
+end
+function PLAYER:WardenCleanupEntities()
+	Warden.CleanupEntities(self)
+end
+
+function PLAYER:WardenSetAdminLevel(level)
+	if type(level) ~= "number" and type(level) ~= "nil" then
+		error("admin level must be a number or nil", 2)
+	end
+
+	self.WardenAdminLevel = level
+
+	net.Start("WardenAdminLevel")
+		net.WriteUInt(level, 8)
+	net.Send(self)
 end
 
 function Warden.FreezeDisconnected()
@@ -39,28 +57,6 @@ function Warden.CleanupDisconnected()
 			Warden.CleanupEntities(steamID)
 		end
 	end
-end
-
-function Warden.SetCVar(cvar, value)
-	if isnumber(value) then
-		cvar:SetInt(value)
-	elseif isbool(value) then
-		cvar:SetBool(value)
-	else
-		cvar:SetBool(false)
-	end
-end
-
-function PLAYER:WardenSetAdminLevel(level)
-	if type(level) ~= "number" and type(level) ~= "nil" then
-		error("admin level must be a number or nil", 2)
-	end
-
-	self.WardenAdminLevel = level
-
-	net.Start("WardenAdminLevel")
-		net.WriteUInt(level, 8)
-	net.Send(self)
 end
 
 net.Receive("WardenAdminLevel", function(_, ply)
