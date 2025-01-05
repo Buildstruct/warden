@@ -3,12 +3,15 @@ hook.Add("AddToolMenuCategories", "Warden", function()
 end)
 
 local setPermPnl
+local setPermPnlExtra
 local checks = {}
 
 local function addSpacer(panel)
 	local spacer = vgui.Create("Panel")
 	spacer:SetTall(1)
 	panel:AddItem(spacer)
+
+	return spacer
 end
 
 local function setPerms(panel)
@@ -17,7 +20,93 @@ local function setPerms(panel)
 	setPermPnl = vgui.Create("WardenSetPerms")
 	panel:AddItem(setPermPnl)
 
-	panel:CheckBox("Let me touch my own entities", "warden_touch_self")
+	panel.Extra = {}
+	panel.Admin = -1
+
+	function panel.GenericExtra()
+		local help panel:ControlHelp("Right click entries to copy name/steamID")
+		table.insert(panel.Extra, help)
+
+		local checkbox = panel:CheckBox("Let me touch my own entities", "warden_touch_self")
+		table.insert(panel.Extra, checkbox)
+	end
+
+	function panel.AdminExtra()
+		local hasCmds = GetGlobalString("WardenCommands") ~= ""
+
+		local help = panel:ControlHelp("Right click entries for cleanup/freezeprops")
+		table.insert(panel.Extra, help)
+
+		if hasCmds then
+			local help1 = panel:ControlHelp("Can also be done with !cleanup/!pfreezeprops")
+			table.insert(panel.Extra, help1)
+		end
+
+		panel.GenericExtra()
+
+		local spacer = addSpacer(panel)
+		table.insert(panel.Extra, spacer)
+
+		local cupdis = panel:Button("Clean up all disconnected players' props")
+		table.insert(panel.Extra, cupdis)
+		function cupdis.DoClick()
+			Warden.CleanupDisconnected()
+		end
+
+		if hasCmds then
+			local helpCupdis = panel:ControlHelp("Can also be done with !cupdis")
+			table.insert(panel.Extra, helpCupdis)
+		end
+
+		local al = panel:NumberWang("Admin level", nil, 0, 99, 0)
+		panel.AL = al
+		table.insert(panel.Extra, al)
+
+		al:HideWang()
+
+		function al:PerformLayout()
+			self:SetTall(16)
+			self:AlignBottom()
+		end
+
+		local min, max = al:GetMin(), al:GetMax()
+
+		function al:OnValueChanged(val)
+			Warden.RequestAdminLevel(math.Clamp(math.floor(val), min, max))
+		end
+
+		if hasCmds then
+			local helpAL = panel:ControlHelp("Can also be set with !al")
+			table.insert(panel.Extra, helpAL)
+		end
+	end
+
+	function panel.Refresh()
+		local admin = LocalPlayer():IsAdmin()
+
+		if admin and IsValid(panel.AL) then
+			panel.AL:SetText(Warden.LocalAdminLevel)
+		end
+
+		if admin == panel.Admin then return end
+		panel.Admin = admin
+
+		for _, v in ipairs(panel.Extra) do
+			if IsValid(v) then
+				v:Remove()
+			end
+		end
+
+		panel.Extra = {}
+
+		if admin then
+			panel.AdminExtra()
+		else
+			panel.GenericExtra()
+		end
+	end
+
+	setPermPnlExtra = panel
 end
 
 local function entInfo(panel)
@@ -192,6 +281,10 @@ hook.Add("SpawnMenuOpened", "Warden", function()
 		setPermPnl:Repopulate()
 	end
 
+	if IsValid(setPermPnlExtra) then
+		setPermPnlExtra:Refresh()
+	end
+
 	for _, v in ipairs(checks) do
 		v()
 	end
@@ -267,17 +360,10 @@ local function overrideModelCType(container, obj)
 	local icon = Warden.OldModelCType(container, obj)
 	if not icon then return end
 
-	--[[ unreliable clientside it seems
-	local class = "prop_effect"
-	if util.IsValidRagdoll(icon:GetModelName()) then
-		class = "prop_ragdoll"
-	elseif util.IsValidProp(icon:GetModelName()) then
-		class = "prop_physics"
-	end
-	--]]
-
 	local mdl = string.gsub(obj.model, "\\", "/")
 
+	-- the functions to detect what class a model
+	-- belongs to are unreliable clientside
 	crossBlock(icon, mdl, "prop_*")
 
 	-- override

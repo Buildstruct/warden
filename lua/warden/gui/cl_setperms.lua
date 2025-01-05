@@ -194,13 +194,28 @@ function PANEL:OnRowRightClick(_, line)
 
 	local _menu = DermaMenu()
 
-	_menu:AddOption("Copy SteamID", function()
+	_menu:AddOption("Copy steamID", function()
 		SetClipboardText(line.SteamID)
 	end):SetIcon("icon16/page_copy.png")
 
-	_menu:AddOption("Copy Name", function()
+	_menu:AddOption("Copy name", function()
 		self:RemoveClass(line.Name)
-	end):SetIcon("icon16/delete.png")
+	end):SetIcon("icon16/page_copy.png")
+
+	if LocalPlayer():IsAdmin() then
+		_menu:AddSpacer()
+
+		local submenu = _menu:AddSubMenu("Admin options...")
+		submenu:SetIcon("icon16/user_gray.png")
+
+		submenu:AddOption("Freeze props", function()
+			Warden.FreezeEntities(ply)
+		end):SetIcon("icon16/anchor.png")
+
+		submenu:AddOption("Clean up props", function()
+			Warden.CleanupEntities(ply)
+		end):SetIcon("icon16/cross.png")
+	end
 
 	_menu:Open()
 end

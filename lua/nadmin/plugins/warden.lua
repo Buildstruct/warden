@@ -30,7 +30,7 @@ nadmin:RegisterCommand(al)
 
 local cupdis = {}
 cupdis.title = "Cleanup Disconnected"
-cupdis.description = "Bypass Warden's restrictions."
+cupdis.description = "Clean up all disconnected players' props."
 cupdis.author = "textstack"
 cupdis.timeCreated = "Saturday, January 4 2025"
 cupdis.category = "Warden"
@@ -75,7 +75,7 @@ nadmin:RegisterCommand(cup)
 
 local pfz = {}
 pfz.title = "Freeze Props"
-pfz.description = "Clean up players' props."
+pfz.description = "Freeze players' props."
 pfz.author = "textstack"
 pfz.timeCreated = "Saturday, January 4 2025"
 pfz.category = "Warden"

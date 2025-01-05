@@ -1,3 +1,5 @@
+CreateClientConVar("warden_touch_self", 1, true, true, "Whether you can touch your own entities.", 0, 1)
+
 -- Ask server for permission info
 hook.Add("InitPostEntity", "Warden", function()
 	net.Start("WardenInitialize")
