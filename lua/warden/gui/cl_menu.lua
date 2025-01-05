@@ -49,9 +49,10 @@ local function setPerms(panel)
 			table.insert(panel.Extra, helpCupdis)
 		end
 
-		local al = panel:NumberWang("Admin level", nil, 0, 99, 0)
+		local al, al1 = panel:NumberWang("Admin level", nil, 0, 99, 0)
 		panel.AL = al
 		table.insert(panel.Extra, al)
+		table.insert(panel.Extra, al1)
 
 		al:HideWang()
 
