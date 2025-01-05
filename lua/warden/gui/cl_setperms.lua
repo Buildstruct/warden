@@ -5,7 +5,6 @@ function PANEL:Init()
 	self:SetHeaderHeight(20)
 	self:SetMultiSelect(false)
 
-	self.PermList = {}
 	self.PlyList = {}
 
 	self:AddColumn("name", 1)
@@ -32,7 +31,7 @@ local function checkFuncs(pnl, permID, ply, callback)
 		end
 
 		surface.SetDrawColor(255, 255, 255)
-		surface.DrawRect(1, 1, w - 2, h - 2)
+		surface.DrawRect(2, 2, w - 4, h - 4)
 
 		surface.SetMaterial(cross)
 		surface.DrawTexturedRect(1, 1, w - 2, h - 2)

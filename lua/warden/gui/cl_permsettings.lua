@@ -7,6 +7,8 @@ function PANEL:Init()
 
 	self:MakeColumns()
 	self:Repopulate()
+
+	self:SortByColumn(1)
 end
 
 function PANEL:MakeColumns()
@@ -43,6 +45,8 @@ function PANEL:SetUpLine(key, perm)
 		surface.SetDrawColor(255, 255, 255)
 		surface.DrawTexturedRect(3, h / 2 - 8, 16, 16)
 	end
+
+	line:SetSortValue(1, perm.ID)
 
 	local onCheck = self:NewCheck(line, 2)
 	function onCheck.box.OnChange(_, val)

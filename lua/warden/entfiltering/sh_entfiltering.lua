@@ -85,7 +85,8 @@ function Warden._GetEntPermBypass(entOrClass, perm)
 	local bypass = Warden.GetClassFilter(entOrClass, perm.KEY)
 	if bypass ~= true then return bypass end
 
-	if Warden.GetServerBool("class_filter_bypass", false) then return true end
+	local bypassBlocked = Warden.GetClassFilter(entOrClass, "_bypass", true) or false
+	if Warden.GetServerBool("class_filter_bypass", false) ~= bypassBlocked then return true end
 end
 
 local wildCards = {}

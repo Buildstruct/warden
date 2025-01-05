@@ -3,7 +3,6 @@ local PANEL = {}
 function PANEL:Init()
 	self:SetMultiSelect(false)
 
-	self.PermList = {}
 	self.ClassList = {}
 
 	self:AddColumn("class", 1)
@@ -48,8 +47,13 @@ function PANEL:AddClass(class, filter, dontNet)
 
 	line:SetTooltip(class)
 
+	function line.Think(pnl)
+		local bypassBlocked = Warden.GetClassFilter(class, "_bypass", true) or false
+		pnl.bypass = Warden.GetServerBool("class_filter_bypass", false) ~= bypassBlocked
+	end
+
 	for _, v in pairs(self.PermList) do
-		self:PermCheck(line, class, v.KEY, v:GetColumnID())
+		self:PermCheck(line, class, v.KEY, v:GetColumnID(), true)
 	end
 
 	self:PermCheck(line, class, "_allow", self.blockCol)
@@ -121,11 +125,15 @@ function PANEL:Repopulate()
 
 	self:SetTall(math.Clamp(self:GetHeaderHeight() + table.Count(self.ClassList) * 17 + 1, 80, 300))
 	self:InvalidateParent(true)
+
+	if changed then
+		self:SortByColumn(1)
+	end
 end
 
 local cross = Material("icon16/cross.png")
 
-function PANEL:PermCheck(line, class, perm, colID)
+function PANEL:PermCheck(line, class, perm, colID, showBypass)
 	local check = vgui.Create("Panel")
 	check.box = check:Add("DCheckBox")
 	check.KEY = perm
@@ -173,13 +181,26 @@ function PANEL:PermCheck(line, class, perm, colID)
 	end
 
 	function check.box.PaintOver(_, w, h)
-		if check.box:GetChecked() ~= false then return end
+		local doCheck = check.box:GetChecked() == false
 
-		surface.SetDrawColor(255, 255, 255)
-		surface.DrawRect(1, 1, w - 2, h - 2)
+		if doCheck then
+			surface.SetDrawColor(255, 255, 255)
+			surface.DrawRect(2, 2, w - 4, h - 4)
+		end
 
-		surface.SetMaterial(cross)
-		surface.DrawTexturedRect(1, 1, w - 2, h - 2)
+		if showBypass and line.bypass then
+			surface.SetDrawColor(255, 192, 0)
+			surface.DrawOutlinedRect(1, 1, w - 2, h - 2)
+
+			surface.SetDrawColor(255, 192, 0, 128)
+			surface.DrawOutlinedRect(2, 2, w - 4, h - 4)
+		end
+
+		if doCheck then
+			surface.SetDrawColor(255, 255, 255)
+			surface.SetMaterial(cross)
+			surface.DrawTexturedRect(1, 1, w - 2, h - 2)
+		end
 	end
 end
 
@@ -200,6 +221,29 @@ function PANEL:OnRowRightClick(_, line)
 	_menu:AddOption("#spawnmenu.menu.copy", function()
 		SetClipboardText(line.CLASS)
 	end):SetIcon("icon16/page_copy.png")
+
+	local bypassBlocked = Warden.GetClassFilter(line.CLASS, "_bypass", true) or false
+	bypassBlocked = bypassBlocked ~= Warden.GetServerBool("class_filter_bypass", false)
+
+	if bypassBlocked then
+		local set
+		if Warden.GetServerBool("class_filter_bypass", false) then
+			set = true
+		end
+
+		_menu:AddOption("Don't bypass blocked perms", function()
+			Warden.UpdateClassFilter(line.CLASS, "_bypass", set)
+		end):SetIcon("icon16/arrow_undo.png")
+	else
+		local set
+		if not Warden.GetServerBool("class_filter_bypass", false) then
+			set = true
+		end
+
+		_menu:AddOption("Bypass blocked perms", function()
+			Warden.UpdateClassFilter(line.CLASS, "_bypass", set)
+		end):SetIcon("icon16/arrow_right.png")
+	end
 
 	_menu:AddOption("Remove filter", function()
 		self:RemoveClass(line.CLASS)

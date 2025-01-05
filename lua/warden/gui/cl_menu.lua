@@ -189,6 +189,9 @@ local function serverSettings(panel)
 
 	setUpCheck(panel:CheckBox("Filters bypass blocked perms"), "class_filter_bypass")
 
+	panel:ControlHelp("Shown on list using gold outlines")
+	panel:ControlHelp("Right click to set per-filter")
+
 	classFilterPnl = vgui.Create("WardenClassFilters")
 	panel:AddItem(classFilterPnl)
 

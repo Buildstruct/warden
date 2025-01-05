@@ -1,3 +1,4 @@
+-- add some functions to dlistview assemblies
 function Warden.AddDListElems(PANEL)
 	-- override
 	function PANEL:FixColumnsLayout()
@@ -44,44 +45,55 @@ function Warden.AddDListElems(PANEL)
 	end
 
 	function PANEL:SetPermColumns(force)
-		local changed = false
+		self.PermList = self.PermList or {}
 
-		for k, v in pairs(self.PermList) do
+		local changed
+
+		for _, v in pairs(self.PermList) do
 			if not IsValid(v) then
-				self.PermList[k] = nil
 				changed = true
-			elseif not Warden.GetPermission(v.ID, force) then
-				v:Remove()
-				self.PermList[k] = nil
+				break
+			end
+			if not Warden.GetPermission(v.ID, force) then
 				changed = true
+				break
+			end
+		end
+
+		for k, _ in pairs(self._Perms) do
+			if not self.PermList[k] then
+				changed = true
+				break
+			end
+		end
+
+		if not changed then return false end
+
+		for _, v in pairs(self.PermList) do
+			v:Remove()
+		end
+
+		self.PermList = {}
+
+		for k, v in pairs(self.Columns) do
+			if not IsValid(v) then
+				self.Columns[k] = nil
 			end
 		end
 
 		for k, v in pairs(self._Perms) do
-			if self.PermList[k] then continue end
-
 			self:NewPermCol(k, v)
-			changed = true
 		end
 
-		if changed then
-			local c = table.Count(self._Perms)
-			local h = self:GetHeaderHeight()
-			local width = h + math.max((h / 4) * (6 - c), 0)
+		local c = table.Count(self._Perms)
+		local h = self:GetHeaderHeight()
+		local width = h + math.max((h / 4) * (6 - c), 0)
 
-			for k, v in pairs(self.Columns) do
-				if not IsValid(v) then
-					self.Columns[k] = nil
-					continue
-				end
-			end
-
-			for k, v in pairs(self.PermList) do
-				v:SetFixedWidth(width)
-			end
+		for k, v in pairs(self.PermList) do
+			v:SetFixedWidth(width)
 		end
 
-		return changed
+		return true
 	end
 
 	function PANEL:NewSettingCol(name, desc, id)
