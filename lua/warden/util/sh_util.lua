@@ -21,7 +21,7 @@ end
 
 function Warden.PlayerIsDisconnected(steamID)
 	local ply = Warden.GetPlayerFromSteamID(steamID)
-	return not Warden.IsValidOwner(ply)
+	return not Warden.IsValid(ply)
 end
 
 -- get the player entity from a steamid, does caching unlike gmod's version
@@ -45,9 +45,9 @@ function Warden.GetNameFromSteamID(steamID, fallback)
 	return Warden.Names[steamID] or fallback
 end
 
--- returns whether an entity is a valid owner
+-- returns whether an entity is valid, including the world
 -- second term returns whether it is the world or not
-function Warden.IsValidOwner(ent)
+function Warden.IsValid(ent)
 	if IsValid(ent) then
 		return true, false
 	end
@@ -63,7 +63,7 @@ end
 function Warden.PossibleSteamID(plyOrID)
 	if type(plyOrID) == "string" then return plyOrID end
 
-	local valid, world = Warden.IsValidOwner(plyOrID)
+	local valid, world = Warden.IsValid(plyOrID)
 	if world then return "World" end
 	if valid and plyOrID:IsPlayer() then return plyOrID:SteamID() end
 end

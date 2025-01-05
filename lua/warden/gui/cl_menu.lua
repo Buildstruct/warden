@@ -17,6 +17,7 @@ end
 local function setPerms(panel)
 	panel:Help("Configure prop protection settings.")
 
+	panel:CheckBox("Let me touch entities", "warden_touch")
 	panel:CheckBox("Let me touch my own entities", "warden_touch_self")
 
 	setPermPnl = vgui.Create("WardenSetPerms")
@@ -49,7 +50,7 @@ local function setPerms(panel)
 			table.insert(panel.Extra, helpCupdis)
 		end
 
-		local al, al1 = panel:NumberWang("Admin level", nil, 0, 99, 0)
+		local al, al1 = panel:NumberWang("Admin level", nil, Warden.ADMIN_LEVEL_MIN, Warden.ADMIN_LEVEL_MAX, 0)
 		panel.AL = al
 		table.insert(panel.Extra, al)
 		table.insert(panel.Extra, al1)
@@ -257,8 +258,20 @@ local function serverSettings(panel)
 
 	setUpCheck(panel:CheckBox("Admin level needs admin"), "admin_level_needs_admin")
 
-	setUpWang(panel:NumberWang("Default admin level", nil, 0, 99, 0), "default_admin_level")
-	setUpWang(panel:NumberWang("AL to bypass filters", nil, 1, 99, 0), "admin_level_filter_bypass")
+	setUpWang(panel:NumberWang("Default admin level", nil, Warden.ADMIN_LEVEL_MIN, Warden.ADMIN_LEVEL_MAX, 0), "default_admin_level")
+	setUpWang(panel:NumberWang("AL to bypass filters", nil, Warden.ADMIN_LEVEL_MIN_1, Warden.ADMIN_LEVEL_MAX, 0), "admin_level_filter_bypass")
+
+	addSpacer(panel)
+
+	Warden.Confirmer(panel, "Reset server settings", "reset server settings", function()
+		Warden.ClearSettings(Warden.ADMIN_NET.CLEAR_SETTINGS)
+	end)
+	Warden.Confirmer(panel, "Clear class filters", "clear class filters", function()
+		Warden.ClearSettings(Warden.ADMIN_NET.CLEAR_CLASSES)
+	end)
+	Warden.Confirmer(panel, "Clear blocked models", "clear blocked models", function()
+		Warden.ClearSettings(Warden.ADMIN_NET.CLEAR_MODELS)
+	end)
 
 	for _, v in ipairs(checks) do
 		v()

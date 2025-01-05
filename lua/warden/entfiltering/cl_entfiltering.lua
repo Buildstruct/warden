@@ -14,7 +14,7 @@ function Warden.UpdateClassFilter(class, key, state)
 	elseif key == nil then
 		filter = {}
 	else
-		filter = Warden.GetClassFilter(class)
+		filter = Warden.GetClassFilter(class, nil, true)
 		filter[key] = state
 	end
 

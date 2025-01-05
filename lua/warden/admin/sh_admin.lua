@@ -1,4 +1,9 @@
 Warden.ADMIN_LEVEL_NET_SIZE = 8
+Warden.ADMIN_NET_SIZE = 4
+
+Warden.ADMIN_LEVEL_MIN = 0
+Warden.ADMIN_LEVEL_MIN_1 = 1
+Warden.ADMIN_LEVEL_MAX = 99
 
 local PLAYER = FindMetaTable("Player")
 

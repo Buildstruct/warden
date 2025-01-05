@@ -71,13 +71,13 @@ function PANEL:SetUpLine(key, perm)
 	local adminLevel = vgui.Create("Panel")
 	adminLevel.box = adminLevel:Add("DNumberWang")
 
-	adminLevel.box:SetMin(1) -- can be 0, but that might cause some user error issues
-	adminLevel.box:SetMax(99)
+	adminLevel.box:SetMin(Warden.ADMIN_LEVEL_MIN_1) -- can be 0, but that might cause some user error issues
+	adminLevel.box:SetMax(Warden.ADMIN_LEVEL_MAX)
 	adminLevel.box:SetDecimals(0)
 	adminLevel.box:HideWang()
 
 	function adminLevel.box.OnValueChanged(_, val)
-		local newVal = math.Clamp(math.floor(val), 1, 99)
+		local newVal = math.Clamp(math.floor(val), Warden.ADMIN_LEVEL_MIN_1, Warden.ADMIN_LEVEL_MAX)
 		perm:SetAdminLevel(newVal)
 		line:SetSortValue(5, newVal)
 	end
@@ -139,6 +139,4 @@ function PANEL:Repopulate()
 	self:SetTall(math.Clamp(self:GetHeaderHeight() + table.Count(self.PermList) * 17 + 1, 80, 300))
 end
 
-Warden.AddDListElems(PANEL)
-
-vgui.Register("WardenPermSettings", PANEL, "DListView")
+vgui.Register("WardenPermSettings", PANEL, "WardenListView")

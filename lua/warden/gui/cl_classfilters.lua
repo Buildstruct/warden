@@ -252,20 +252,16 @@ function PANEL:OnRowRightClick(_, line)
 	_menu:Open()
 end
 
-Warden.AddDListElems(PANEL)
-
-vgui.Register("WardenClassFiltersList", PANEL, "DListView")
+vgui.Register("WardenClassFiltersList", PANEL, "WardenListView")
 
 local PANEL1 = {}
 
 local black = Color(30, 30, 30)
 
 function PANEL1:Init()
-	self.Entry = self:Add("DTextEntry")
+	self.Entry = self:Add("WardenTextEntry")
 	self.Entry:Dock(BOTTOM)
 	self.Entry:SetPlaceholderText("Add classes to filter list...")
-
-	Warden.NoLoseFocus(self.Entry)
 
 	function self.Entry.OnEnter(pnl)
 		local elems = string.Explode("[,;|]", pnl:GetValue(), true)
@@ -274,14 +270,23 @@ function PANEL1:Init()
 			local entry = string.Trim(v)
 			local left = entry:Left(1)
 
-			local remove
+			local op
 			if left == "-" then
-				remove = true
+				op = 1
+				entry = string.TrimLeft(string.sub(entry, 2))
+			elseif left == "+" then
+				op = 2
 				entry = string.TrimLeft(string.sub(entry, 2))
 			end
 
 			local expl = string.Explode(" ", entry)
 			local class = expl[1]
+
+			if op == 1 then
+				self:RemoveClass(class)
+				return
+			end
+
 			local filterOps = table.concat(expl, "", 2)
 
 			local filter
@@ -298,13 +303,16 @@ function PANEL1:Init()
 						filter[v1] = nil
 					end
 				end
+
+				if op == 2 then
+					filter._bypass = true
+				end
+			elseif op == 2 then
+				filter = Warden.GetClassFilter(class, nil, true)
+				filter._bypass = true
 			end
 
-			if remove then
-				self:RemoveClass(class)
-			else
-				self:AddClass(class, filter)
-			end
+			self:AddClass(class, filter)
 		end
 	end
 

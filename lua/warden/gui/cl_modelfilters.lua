@@ -3,11 +3,9 @@ local PANEL = {}
 local black = Color(30, 30, 30)
 
 function PANEL:Init()
-	self.Entry = self:Add("DTextEntry")
+	self.Entry = self:Add("WardenTextEntry")
 	self.Entry:Dock(BOTTOM)
 	self.Entry:SetPlaceholderText("Add models to block list...")
-
-	Warden.NoLoseFocus(self.Entry)
 
 	function self.Entry.OnEnter(pnl)
 		local elems = string.Explode("[,;|]", pnl:GetValue(), true)

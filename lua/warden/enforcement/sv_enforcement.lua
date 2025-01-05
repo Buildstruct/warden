@@ -14,9 +14,9 @@ hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
 	local attacker = dmg:GetAttacker()
 
 	-- fix fire damage
-	if IsValid(attacker) and attacker:GetClass() == "entityflame" and Warden.IsValidOwner(attacker:GetParent()) then
+	if IsValid(attacker) and attacker:GetClass() == "entityflame" and Warden.IsValid(attacker:GetParent()) then
 		local newAttacker = attacker:GetParent():CPPIGetOwner()
-		if Warden.IsValidOwner(newAttacker) then
+		if Warden.IsValid(newAttacker) then
 			attacker = newAttacker
 			dmg:SetAttacker(attacker)
 		end

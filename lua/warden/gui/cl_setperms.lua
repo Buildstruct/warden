@@ -219,6 +219,4 @@ function PANEL:OnRowRightClick(_, line)
 	_menu:Open()
 end
 
-Warden.AddDListElems(PANEL)
-
-vgui.Register("WardenSetPerms", PANEL, "DListView")
+vgui.Register("WardenSetPerms", PANEL, "WardenListView")

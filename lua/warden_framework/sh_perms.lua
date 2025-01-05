@@ -125,6 +125,7 @@ makeGetSet("AdminLevel", "admin_level_", "Setting", 99)
 makeGetSet("WorldAccess", "world_access_", "Bool", false)
 makeGetSet("Default", "default_", "Bool", false)
 makeGetSet("Enabled", "enabled_", "Bool", true)
+makeGetSet("BypassTouch", "bypass_touch_", "Bool", false)
 
 -- // default permission definitions // --
 
@@ -132,7 +133,10 @@ Warden.PERMISSION_ALL     = Warden.RegisterPermissionSimple("whitelist", "whitel
 Warden.PERMISSION_TOOL    = Warden.RegisterPermissionSimple("tool", "toolgun", "Allows users to use the toogun on your stuff.", 2, nil, "bs/aegis_tool.png", "icon16/cup.png")
 Warden.PERMISSION_PHYSGUN = Warden.RegisterPermissionSimple("physgun", "physgun", "Allows users to pickup your stuff with the physgun.", 1, nil, "bs/aegis_physgun.png", "icon16/flag_blue.png")
 Warden.PERMISSION_GRAVGUN = Warden.RegisterPermissionSimple("gravgun", "gravgun", "Allows users to pickup your stuff with the gravgun.", 1, true, "bs/aegis_gravgun.png", "icon16/flag_orange.png")
-Warden.PERMISSION_USE     = Warden.RegisterPermissionSimple("use", "use", "Allows users to sit in your seats, use your wire buttons, etc.", 1, true, "bs/aegis_use.png", "icon16/mouse.png")
+
+Warden.PERMISSION_USE, use     = Warden.RegisterPermissionSimple("use", "use", "Allows users to sit in your seats, use your wire buttons, etc.", 1, true, "bs/aegis_use.png", "icon16/mouse.png")
+use:SetBypassTouch(true, true)
+
 Warden.PERMISSION_DAMAGE  = Warden.RegisterPermissionSimple("damage", "damage", "Allows users to damage you and your stuff (excluding ACF).", 2, true, "bs/aegis_damage.png", "icon16/sport_raquet.png")
 
 -- // helpers and global funcs // --
@@ -181,13 +185,26 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 
 	if not receiverOwner then return false end
 
+	local validRec = IsValid(receiverOwner)
+
+	if validRec and receiver == receiverOwner and receiver ~= granter and not perm:GetBypassTouch() then
+		if receiverOwner == granterOwner and receiverOwner:GetInfoNum("warden_touch_self", 1) == 0 then
+			return false
+		end
+
+		local valid, world = Warden.IsValid(granter)
+		if not world and (not valid or not granter:IsPlayer()) and receiverOwner:GetInfoNum("warden_touch", 1) == 0 then
+			return false
+		end
+	end
+
 	local bypass = Warden._GetEntPermBypass(granter, perm)
 	if bypass ~= nil then
 		if bypass then return true end
-		if not IsValid(receiverOwner) or not Warden.PlyBypassesFilters(receiverOwner) then return false end
+		if not validRec or not Warden.PlyBypassesFilters(receiverOwner) then return false end
 	end
 
-	if IsValid(receiverOwner) and perm:GetAdminLevel() <= receiverOwner:WardenGetAdminLevel() then return true end
+	if validRec and perm:GetAdminLevel() <= receiverOwner:WardenGetAdminLevel() then return true end
 
 	if not granterOwner then return false end
 
@@ -198,7 +215,7 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 		return perm:GetWorldAccess()
 	end
 
-	if not IsValid(receiverOwner) or not IsValid(granterOwner) then return false end
+	if not validRec or not IsValid(granterOwner) then return false end
 
 	-- both receiverOwner and granterOwner are confirmed players
 
@@ -210,10 +227,6 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 	end
 
 	if receiverOwner == granterOwner then
-		if receiver == receiverOwner and receiver ~= granter then
-			return receiverOwner:GetInfoNum("warden_touch_self", 1) == 1
-		end
-
 		return true
 	end
 

@@ -76,7 +76,7 @@ end
 
 -- get the owner steamid of an entity
 function Warden.GetOwnerID(ent)
-	local valid, world = Warden.IsValidOwner(ent)
+	local valid, world = Warden.IsValid(ent)
 	if not valid then return end
 
 	if world then return "World" end

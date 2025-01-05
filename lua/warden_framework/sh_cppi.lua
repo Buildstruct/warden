@@ -39,7 +39,7 @@ function entMeta:CPPIGetOwner()
 	local ownerEnt = Warden.GetOwner(self)
 	local steamID = Warden.GetOwnerID(self)
 
-	if Warden.IsValidOwner(ownerEnt) then
+	if Warden.IsValid(ownerEnt) then
 		return ownerEnt, steamID
 	elseif steamID ~= "" then
 		return nil, steamID
