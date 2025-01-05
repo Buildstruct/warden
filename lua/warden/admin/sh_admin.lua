@@ -1,5 +1,7 @@
 Warden.ADMIN_LEVEL_NET_SIZE = 8
 
+local PLAYER = FindMetaTable("Player")
+
 -- get what admin level a player has
 function PLAYER:WardenGetAdminLevel()
 	if Warden.GetServerBool("admin_level_needs_admin", true) and not self:IsAdmin() then

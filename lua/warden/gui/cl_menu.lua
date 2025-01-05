@@ -15,37 +15,28 @@ local function addSpacer(panel)
 end
 
 local function setPerms(panel)
-	panel:Help("Configure prop protection from other players.")
+	panel:Help("Configure prop protection settings.")
+
+	panel:CheckBox("Let me touch my own entities", "warden_touch_self")
 
 	setPermPnl = vgui.Create("WardenSetPerms")
 	panel:AddItem(setPermPnl)
 
+	panel:ControlHelp("Right click to copy name/steamID")
+
 	panel.Extra = {}
 	panel.Admin = -1
-
-	function panel.GenericExtra()
-		local help panel:ControlHelp("Right click entries to copy name/steamID")
-		table.insert(panel.Extra, help)
-
-		local checkbox = panel:CheckBox("Let me touch my own entities", "warden_touch_self")
-		table.insert(panel.Extra, checkbox)
-	end
 
 	function panel.AdminExtra()
 		local hasCmds = GetGlobalString("WardenCommands") ~= ""
 
-		local help = panel:ControlHelp("Right click entries for cleanup/freezeprops")
+		local help = panel:ControlHelp("Right click to cleanup/freezeprops")
 		table.insert(panel.Extra, help)
 
 		if hasCmds then
-			local help1 = panel:ControlHelp("Can also be done with !cleanup/!pfreezeprops")
+			local help1 = panel:ControlHelp("(also try !cleanup/!pfreezeprops)")
 			table.insert(panel.Extra, help1)
 		end
-
-		panel.GenericExtra()
-
-		local spacer = addSpacer(panel)
-		table.insert(panel.Extra, spacer)
 
 		local cupdis = panel:Button("Clean up all disconnected players' props")
 		table.insert(panel.Extra, cupdis)
@@ -85,7 +76,7 @@ local function setPerms(panel)
 		local admin = LocalPlayer():IsAdmin()
 
 		if admin and IsValid(panel.AL) then
-			panel.AL:SetText(Warden.LocalAdminLevel)
+			panel.AL:SetText(LocalPlayer():WardenGetAdminLevel())
 		end
 
 		if admin == panel.Admin then return end
@@ -101,12 +92,12 @@ local function setPerms(panel)
 
 		if admin then
 			panel.AdminExtra()
-		else
-			panel.GenericExtra()
 		end
 	end
 
 	setPermPnlExtra = panel
+
+	panel.Refresh()
 end
 
 local function entInfo(panel)

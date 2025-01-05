@@ -34,5 +34,10 @@ function Warden.FreezeEntities(ply)
 end
 
 net.Receive("WardenAdmin", function()
-	Warden.LocalAdminLevel = net.ReadUInt(Warden.ADMIN_LEVEL_NET_SIZE)
+	if net.ReadBool() then
+		Warden.LocalAdminLevel = net.ReadUInt(Warden.ADMIN_LEVEL_NET_SIZE)
+		return
+	end
+
+	notification.AddLegacy(net.ReadString(), NOTIFY_CLEANUP, 7)
 end)
