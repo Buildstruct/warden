@@ -204,8 +204,8 @@ function PANEL:OnRowRightClick(_, line)
 	if LocalPlayer():IsAdmin() then
 		_menu:AddSpacer()
 
-		local submenu = _menu:AddSubMenu("Admin options...")
-		submenu:SetIcon("icon16/user_gray.png")
+		local submenu, option = _menu:AddSubMenu("Admin options...")
+		option:SetIcon("icon16/user_gray.png")
 
 		submenu:AddOption("Freeze props", function()
 			Warden.FreezeEntities(ply)
