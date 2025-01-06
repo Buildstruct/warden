@@ -3,7 +3,7 @@ Warden.Settings = Warden.Settings or {}
 -- write a server setting and save to file (if superadmin)
 function Warden.SetServerSetting(setting, value)
 	if not LocalPlayer():IsSuperAdmin() then
-		LocalPlayer():ChatPrint("Only superadmins can change Warden's settings.")
+		Warden.SAInform()
 		return true
 	end
 

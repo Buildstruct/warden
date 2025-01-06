@@ -1,2 +1,0 @@
-Warden.PERM_NET_SIZE = 8
-Warden.PERM_PLY_NET_SIZE = 8

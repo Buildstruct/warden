@@ -1,10 +1,3 @@
-Warden.ADMIN_LEVEL_NET_SIZE = 8
-Warden.ADMIN_NET_SIZE = 4
-
-Warden.ADMIN_LEVEL_MIN = 0
-Warden.ADMIN_LEVEL_MIN_1 = 1
-Warden.ADMIN_LEVEL_MAX = 99
-
 local PLAYER = FindMetaTable("Player")
 
 -- get what admin level a player has
@@ -23,4 +16,13 @@ function PLAYER:WardenGetAdminLevel()
 	end
 
 	return adminLevel
+end
+
+function Warden.SAInform(ply)
+	if CLIENT then
+		notification.AddLegacy(Warden.L("Only superadmins can change Warden's settings."), NOTIFY_ERROR, 4)
+		return
+	end
+
+	ply:ChatPrint("Only superadmins can change Warden's settings.")
 end

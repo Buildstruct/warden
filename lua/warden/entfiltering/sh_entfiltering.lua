@@ -1,9 +1,6 @@
 Warden.ClassFilters = Warden.ClassFilters or {}
 Warden.ModelFilters = Warden.ModelFilters or {}
 
-Warden.FILTER_NET_SIZE = 11
-Warden.CLASS_FILTER_NET_SIZE = 6
-
 function Warden.PlyBypassesFilters(ply)
 	return Warden.GetServerSetting("admin_level_filter_bypass") <= ply:WardenGetAdminLevel()
 end

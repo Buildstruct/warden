@@ -15,15 +15,15 @@ local function addSpacer(panel)
 end
 
 local function setPerms(panel)
-	panel:Help("Configure prop protection settings.")
+	panel:Help(Warden.L("Configure prop protection settings."))
 
-	panel:CheckBox("Let me touch entities", "warden_touch")
-	panel:CheckBox("Let me touch my own entities", "warden_touch_self")
+	panel:CheckBox(Warden.L("Let me touch entities"), "warden_touch")
+	panel:CheckBox(Warden.L("Let me touch my own entities"), "warden_touch_self")
 
 	setPermPnl = vgui.Create("WardenSetPerms")
 	panel:AddItem(setPermPnl)
 
-	panel:ControlHelp("Right click to copy name/steamID")
+	panel:ControlHelp(Warden.L("Right click to copy name/steamID"))
 
 	panel.Extra = {}
 	panel.Admin = -1
@@ -31,26 +31,26 @@ local function setPerms(panel)
 	function panel.AdminExtra()
 		local hasCmds = GetGlobalString("WardenCommands") ~= ""
 
-		local help = panel:ControlHelp("Right click to cleanup/freezeprops")
+		local help = panel:ControlHelp(Warden.L("Right click to cleanup/freeze props"))
 		table.insert(panel.Extra, help)
 
 		if hasCmds then
-			local help1 = panel:ControlHelp("(also try !cleanup/!pfreezeprops)")
+			local help1 = panel:ControlHelp(Warden.L("(also try !cleanup/!pfreezeprops)"))
 			table.insert(panel.Extra, help1)
 		end
 
-		local cupdis = panel:Button("Clean up all disconnected players' props")
+		local cupdis = panel:Button(Warden.L("Clean up all disconnected players' props"))
 		table.insert(panel.Extra, cupdis)
 		function cupdis.DoClick()
 			Warden.CleanupDisconnected()
 		end
 
 		if hasCmds then
-			local helpCupdis = panel:ControlHelp("Can also be done with !cupdis")
+			local helpCupdis = panel:ControlHelp(Warden.L("Can also be done with !cupdis"))
 			table.insert(panel.Extra, helpCupdis)
 		end
 
-		local al, al1 = panel:NumberWang("Admin level", nil, Warden.ADMIN_LEVEL_MIN, Warden.ADMIN_LEVEL_MAX, 0)
+		local al, al1 = panel:NumberWang(Warden.L("Admin level"), nil, Warden.ADMIN_LEVEL_MIN, Warden.ADMIN_LEVEL_MAX, 0)
 		panel.AL = al
 		table.insert(panel.Extra, al)
 		table.insert(panel.Extra, al1)
@@ -69,7 +69,7 @@ local function setPerms(panel)
 		end
 
 		if hasCmds then
-			local helpAL = panel:ControlHelp("Can also be set with !al")
+			local helpAL = panel:ControlHelp(Warden.L("Can also be set with !al"))
 			table.insert(panel.Extra, helpAL)
 		end
 	end
@@ -103,28 +103,28 @@ local function setPerms(panel)
 end
 
 local function entInfo(panel)
-	panel:Help("Configure the entity info display.")
+	panel:Help(Warden.L("Configure the entity info display."))
 
-	panel:CheckBox("Enabled", "warden_entinfo_enabled")
-
-	addSpacer(panel)
-
-	panel:CheckBox("Show Owner", "warden_entinfo_show_owner")
-	panel:CheckBox("Show Class", "warden_entinfo_show_class")
-	panel:CheckBox("Show Model", "warden_entinfo_show_model")
-	panel:CheckBox("Show Material", "warden_entinfo_show_material")
-	panel:CheckBox("Show Color", "warden_entinfo_show_color")
-	panel:CheckBox("Show Permissions", "warden_entinfo_show_perms")
+	panel:CheckBox(Warden.L("Enabled"), "warden_entinfo_enabled")
 
 	addSpacer(panel)
 
-	panel:CheckBox("Blur", "warden_entinfo_blur")
+	panel:CheckBox(Warden.L("Show owner"), "warden_entinfo_show_owner")
+	panel:CheckBox(Warden.L("Show class"), "warden_entinfo_show_class")
+	panel:CheckBox(Warden.L("Show model"), "warden_entinfo_show_model")
+	panel:CheckBox(Warden.L("Show material"), "warden_entinfo_show_material")
+	panel:CheckBox(Warden.L("Show color"), "warden_entinfo_show_color")
+	panel:CheckBox(Warden.L("Show perms"), "warden_entinfo_show_perms")
 
-	local combo = panel:ComboBox("Size", "warden_entinfo_size")
-	combo:AddChoice("Auto", -1)
-	combo:AddChoice("Small", 0)
-	combo:AddChoice("Normal", 1)
-	combo:AddChoice("Large", 2)
+	addSpacer(panel)
+
+	panel:CheckBox(Warden.L("Blur"), "warden_entinfo_blur")
+
+	local combo = panel:ComboBox(Warden.L("Size"), "warden_entinfo_size")
+	combo:AddChoice(Warden.L("Auto"), -1)
+	combo:AddChoice(Warden.L("Small"), 0)
+	combo:AddChoice(Warden.L("Normal"), 1)
+	combo:AddChoice(Warden.L("Large"), 2)
 end
 
 local function setUpCheck(check, setting)
@@ -164,9 +164,9 @@ local modelFilterPnl
 local function serverSettings(panel)
 	checks = {}
 
-	panel:Help("Configure the server's entity permissions.")
+	panel:Help(Warden.L("Configure the server's entity permissions."))
 
-	panel:SetLabel("Server Settings (superadmins only)")
+	panel:SetLabel(Warden.L("Server Settings (superadmins only)"))
 
 	function panel:PaintOver(w, h)
 		local headerHeight = self:GetHeaderHeight()
@@ -181,35 +181,35 @@ local function serverSettings(panel)
 	local permSettingsPnl = vgui.Create("WardenPermSettings")
 	panel:AddItem(permSettingsPnl)
 
-	panel:ControlHelp("ON: is the perm enabled?")
-	panel:ControlHelp("DF: is the perm on by default?")
-	panel:ControlHelp("WA: does the world have the perm?")
-	panel:ControlHelp("AL: the admin level to bypass the perm")
+	panel:ControlHelp(Warden.L("ON: is the perm enabled?"))
+	panel:ControlHelp(Warden.L("DF: is the perm on by default?"))
+	panel:ControlHelp(Warden.L("WA: does the world have the perm?"))
+	panel:ControlHelp(Warden.L("AL: the admin level to bypass the perm"))
 
-	panel:Help("Configure class filters.")
+	panel:Help(Warden.L("Configure class filters."))
 
-	setUpCheck(panel:CheckBox("Filters bypass blocked perms"), "class_filter_bypass")
+	setUpCheck(panel:CheckBox(Warden.L("Filters bypass blocked perms")), "class_filter_bypass")
 
-	panel:ControlHelp("Shown on list using gold outlines")
-	panel:ControlHelp("Right click to set per-filter")
+	panel:ControlHelp(Warden.L("Shown on list using gold outlines"))
+	panel:ControlHelp(Warden.L("Right click to set per-filter"))
 
 	classFilterPnl = vgui.Create("WardenClassFilters")
 	panel:AddItem(classFilterPnl)
 
-	panel:ControlHelp("Prefix with `-` to remove class")
-	panel:ControlHelp("Use `,`/`;` to do multiple operations")
-	panel:ControlHelp("Use `+`/`-`/`=` to quick-set columns")
-	panel:ControlHelp("Has basic wildcard support (`*`)")
+	panel:ControlHelp(Warden.L("Prefix with `-` to remove class"))
+	panel:ControlHelp(Warden.L("Use `,`/`;` to do multiple operations"))
+	panel:ControlHelp(Warden.L("Use `+`/`-`/`=` to quick-set columns"))
+	panel:ControlHelp(Warden.L("Has basic wildcard support (`*`)"))
 
-	panel:Help("Block models from being spawned.")
+	panel:Help(Warden.L("Block models from being spawned."))
 
-	setUpCheck(panel:CheckBox("Block list is a whitelist"), "model_filter_whitelist")
+	setUpCheck(panel:CheckBox(Warden.L("Block list is a whitelist")), "model_filter_whitelist")
 
 	modelFilterPnl = vgui.Create("WardenModelFilters")
 	panel:AddItem(modelFilterPnl)
 
-	panel:ControlHelp("Prefix with `-` to remove model")
-	panel:ControlHelp("Use `,`/`;` to do multiple operations")
+	panel:ControlHelp(Warden.L("Prefix with `-` to remove model"))
+	panel:ControlHelp(Warden.L("Use `,`/`;` to do multiple operations"))
 
 	table.insert(checks, function()
 		if IsValid(permSettingsPnl) then
@@ -225,17 +225,17 @@ local function serverSettings(panel)
 		end
 	end)
 
-	panel:Help("Configure general server settings.")
+	panel:Help(Warden.L("Configure general server settings."))
 
-	setUpCheck(panel:CheckBox("Players can always affect bots"), "always_target_bots")
-	setUpCheck(panel:CheckBox("Allow gravgun punting"), "gravgun_punt")
+	setUpCheck(panel:CheckBox(Warden.L("Players can always affect bots")), "always_target_bots")
+	setUpCheck(panel:CheckBox(Warden.L("Allow gravgun punting")), "gravgun_punt")
 
 	addSpacer(panel)
 
-	setUpCheck(panel:CheckBox("Freeze players' entities on disconnect"), "freeze_disconnect")
-	setUpCheck(panel:CheckBox("Clean up players' entities on disconnect"), "cleanup_disconnect")
+	setUpCheck(panel:CheckBox(Warden.L("Freeze players' entities on disconnect")), "freeze_disconnect")
+	setUpCheck(panel:CheckBox(Warden.L("Clean up players' entities on disconnect")), "cleanup_disconnect")
 
-	local slider = panel:NumSlider("Entity cleanup time", nil, 0, 1000, 0)
+	local slider = panel:NumSlider(Warden.L("Clean up time"), nil, 0, 1000, 0)
 	slider:SetDefaultValue(Warden.GetDefaultServerSetting("cleanup_time"))
 
 	table.insert(checks, function()
@@ -256,10 +256,10 @@ local function serverSettings(panel)
 
 	addSpacer(panel)
 
-	setUpCheck(panel:CheckBox("Admin level needs admin"), "admin_level_needs_admin")
+	setUpCheck(panel:CheckBox(Warden.L("Admin level needs admin")), "admin_level_needs_admin")
 
-	setUpWang(panel:NumberWang("Default admin level", nil, Warden.ADMIN_LEVEL_MIN, Warden.ADMIN_LEVEL_MAX, 0), "default_admin_level")
-	setUpWang(panel:NumberWang("AL to bypass filters", nil, Warden.ADMIN_LEVEL_MIN_1, Warden.ADMIN_LEVEL_MAX, 0), "admin_level_filter_bypass")
+	setUpWang(panel:NumberWang(Warden.L("Default admin level"), nil, Warden.ADMIN_LEVEL_MIN, Warden.ADMIN_LEVEL_MAX, 0), "default_admin_level")
+	setUpWang(panel:NumberWang(Warden.L("AL to bypass filters"), nil, Warden.ADMIN_LEVEL_MIN_1, Warden.ADMIN_LEVEL_MAX, 0), "admin_level_filter_bypass")
 
 	addSpacer(panel)
 
@@ -279,9 +279,9 @@ local function serverSettings(panel)
 end
 
 hook.Add("PopulateToolMenu", "Warden", function()
-	spawnmenu.AddToolMenuOption("Utilities", "Warden", "warden_setperms", "#Prop Protection", "", "", setPerms)
-	spawnmenu.AddToolMenuOption("Utilities", "Warden", "warden_entinfo", "#Entity Info", "", "", entInfo)
-	spawnmenu.AddToolMenuOption("Utilities", "Warden", "warden_serversettings", "#Server Settings", "", "", serverSettings)
+	spawnmenu.AddToolMenuOption("Utilities", "Warden", "warden_setperms", Warden.L("Prop Protection"), "", "", setPerms)
+	spawnmenu.AddToolMenuOption("Utilities", "Warden", "warden_entinfo", Warden.L("Entity Info"), "", "", entInfo)
+	spawnmenu.AddToolMenuOption("Utilities", "Warden", "warden_serversettings", Warden.L("Server Settings"), "", "", serverSettings)
 end)
 
 hook.Add("SpawnMenuOpened", "Warden", function()
@@ -395,11 +395,11 @@ local function overrideModelCType(container, obj)
 
 		if LocalPlayer():IsSuperAdmin() then
 			if Warden.IsModelBlocked(mdl) then
-				_menu:AddOption("(Warden) Unblock model", function()
+				_menu:AddOption(Warden.L("(Warden) Unblock model"), function()
 					modelFilter(mdl, false)
 				end):SetIcon("icon16/accept.png")
 			else
-				_menu:AddOption("(Warden) Block model", function()
+				_menu:AddOption(Warden.L("(Warden) Block model"), function()
 					modelFilter(mdl, true)
 				end):SetIcon("icon16/delete.png")
 			end

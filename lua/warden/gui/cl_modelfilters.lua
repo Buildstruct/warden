@@ -5,7 +5,7 @@ local black = Color(30, 30, 30)
 function PANEL:Init()
 	self.Entry = self:Add("WardenTextEntry")
 	self.Entry:Dock(BOTTOM)
-	self.Entry:SetPlaceholderText("Add models to block list...")
+	self.Entry:SetPlaceholderText(Warden.L("Add models to block list..."))
 
 	function self.Entry.OnEnter(pnl)
 		local elems = string.Explode("[,;|]", pnl:GetValue(), true)
@@ -29,7 +29,7 @@ function PANEL:Init()
 	function self.List.PaintOver(pnl, w, h)
 		if not table.IsEmpty(self.Models) then return end
 
-		draw.DrawText("no models blocked", "WardenEntBig0", w / 2, h / 2 - 10, black, TEXT_ALIGN_CENTER)
+		draw.DrawText(Warden.L("no models blocked"), "WardenEntBig0", w / 2, h / 2 - 10, black, TEXT_ALIGN_CENTER)
 	end
 
 	self.Models = {}
@@ -105,7 +105,7 @@ function PANEL:OnRightClick(button)
 		SetClipboardText(button.Model)
 	end):SetIcon("icon16/page_copy.png")
 
-	_menu:AddOption("Unblock model", function()
+	_menu:AddOption(Warden.L("Unblock model"), function()
 		self:RemoveModel(button.Model)
 	end):SetIcon("icon16/accept.png")
 

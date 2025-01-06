@@ -29,6 +29,15 @@ function Warden.SetServerSetting(setting, value)
 	net.Broadcast()
 end
 
+function Warden.ClearSettings()
+	Warden.Settings = {}
+	file.Write("warden/settings.json", util.TableToJSON(Warden.Settings))
+
+	net.Start("WardenAdmin")
+	net.WriteUInt(Warden.ADMIN_NET.CLEAR_SETTINGS, Warden.ADMIN_NET_SIZE)
+	net.Broadcast()
+end
+
 local function sendAll()
 	net.Start("WardenAdminSettingChange")
 	net.WriteUInt(table.Count(Warden.Settings), 8)
@@ -55,7 +64,7 @@ end)
 
 net.Receive("WardenAdminSettingChange", function(_, ply)
 	if not ply:IsSuperAdmin() then
-		ply:ChatPrint("Only superadmins can change Warden's settings.")
+		Warden.SAInform(ply)
 		return
 	end
 

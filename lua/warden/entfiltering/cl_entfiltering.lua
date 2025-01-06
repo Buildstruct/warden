@@ -4,7 +4,7 @@ Warden.ModelFilters = Warden.ModelFilters or {}
 -- update a filter for a class (if superadmin)
 function Warden.UpdateClassFilter(class, key, state)
 	if not LocalPlayer():IsSuperAdmin() then
-		LocalPlayer():ChatPrint("Only superadmins can change Warden's settings.")
+		Warden.SAInform()
 		return true
 	end
 
@@ -32,7 +32,7 @@ end
 -- update a filter for a model (if superadmin)
 function Warden.UpdateModelFilter(model, state)
 	if not LocalPlayer():IsSuperAdmin() then
-		LocalPlayer():ChatPrint("Only superadmins can change Warden's settings.")
+		Warden.SAInform()
 		return true
 	end
 

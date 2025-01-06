@@ -35,11 +35,10 @@ function Warden.RegisterPermission(tbl, key)
 end
 
 -- same as above but do all of the important stuff at once
-function Warden.RegisterPermissionSimple(key, name, desc, adminLevel, worldAccess, icon, iconFallback)
+function Warden.RegisterPermissionSimple(key, name, adminLevel, worldAccess, icon, iconFallback)
 	local tbl = Warden.CreatePermission(key)
 
 	tbl:SetName(name)
-	tbl:SetDesc(desc)
 	tbl:SetAdminLevel(adminLevel, true)
 	tbl:SetWorldAccess(worldAccess, true)
 	tbl:SetIcon(icon, iconFallback)
@@ -92,7 +91,9 @@ function permFuncs:SetName(name)
 end
 
 function permFuncs:GetName()
-	return self.Name or "Permission"
+	if SERVER then return self.Name or "perm" end
+
+	return Warden.L(self.Name or "perm")
 end
 
 function permFuncs:SetDesc(desc)
@@ -129,15 +130,15 @@ makeGetSet("BypassTouch", "bypass_touch_", "Bool", false)
 
 -- // default permission definitions // --
 
-Warden.PERMISSION_ALL     = Warden.RegisterPermissionSimple("whitelist", "whitelist", "Grants full permissions.", 3)
-Warden.PERMISSION_TOOL    = Warden.RegisterPermissionSimple("tool", "toolgun", "Allows users to use the toogun on your stuff.", 2, nil, "bs/aegis_tool.png", "icon16/cup.png")
-Warden.PERMISSION_PHYSGUN = Warden.RegisterPermissionSimple("physgun", "physgun", "Allows users to pickup your stuff with the physgun.", 1, nil, "bs/aegis_physgun.png", "icon16/flag_blue.png")
-Warden.PERMISSION_GRAVGUN = Warden.RegisterPermissionSimple("gravgun", "gravgun", "Allows users to pickup your stuff with the gravgun.", 1, true, "bs/aegis_gravgun.png", "icon16/flag_orange.png")
+Warden.PERMISSION_ALL     = Warden.RegisterPermissionSimple("whitelist", "whitelist", 3)
+Warden.PERMISSION_TOOL    = Warden.RegisterPermissionSimple("tool", "toolgun", 2, nil, "bs/aegis_tool.png", "icon16/cup.png")
+Warden.PERMISSION_PHYSGUN = Warden.RegisterPermissionSimple("physgun", "physgun", 1, nil, "bs/aegis_physgun.png", "icon16/flag_blue.png")
+Warden.PERMISSION_GRAVGUN = Warden.RegisterPermissionSimple("gravgun", "gravgun", 1, true, "bs/aegis_gravgun.png", "icon16/flag_orange.png")
 
-Warden.PERMISSION_USE, use     = Warden.RegisterPermissionSimple("use", "use", "Allows users to sit in your seats, use your wire buttons, etc.", 1, true, "bs/aegis_use.png", "icon16/mouse.png")
+Warden.PERMISSION_USE, use     = Warden.RegisterPermissionSimple("use", "use", 1, true, "bs/aegis_use.png", "icon16/mouse.png")
 use:SetBypassTouch(true, true)
 
-Warden.PERMISSION_DAMAGE  = Warden.RegisterPermissionSimple("damage", "damage", "Allows users to damage you and your stuff (excluding ACF).", 2, true, "bs/aegis_damage.png", "icon16/sport_raquet.png")
+Warden.PERMISSION_DAMAGE  = Warden.RegisterPermissionSimple("damage", "damage", 2, true, "bs/aegis_damage.png", "icon16/sport_raquet.png")
 
 -- // helpers and global funcs // --
 

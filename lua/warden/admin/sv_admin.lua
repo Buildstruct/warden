@@ -17,38 +17,12 @@ function PLAYER:WardenSetAdminLevel(level)
 	net.Send(self)
 end
 
-function Warden.ClearSettings()
-	Warden.Settings = {}
-	file.Write("warden/settings.json", util.TableToJSON(Warden.Settings))
-
-	net.Start("WardenAdmin")
-	net.WriteUInt(Warden.ADMIN_NET.CLEAR_SETTINGS, Warden.ADMIN_NET_SIZE)
-	net.Broadcast()
-end
-
-function Warden.ClearClassFilters()
-	Warden.ClassFilters = {}
-	Warden._ResetClassCaches()
-	file.Write("warden/classfilters.json", util.TableToJSON(Warden.ClassFilters))
-
-	net.Start("WardenAdmin")
-	net.WriteUInt(Warden.ADMIN_NET.CLEAR_CLASSES, Warden.ADMIN_NET_SIZE)
-	net.Broadcast()
-end
-
-function Warden.ClearModelFilters()
-	Warden.ModelFilters = {}
-	file.Write("warden/modelfilters.json", util.TableToJSON(Warden.ModelFilters))
-
-	net.Start("WardenAdmin")
-	net.WriteUInt(Warden.ADMIN_NET.CLEAR_MODELS, Warden.ADMIN_NET_SIZE)
-	net.Broadcast()
-end
-
-local function netNotif(msg)
+local function netNotif(msg, name, name1)
 	net.Start("WardenAdmin")
 	net.WriteUInt(Warden.ADMIN_NET.MESSAGE, Warden.ADMIN_NET_SIZE)
 	net.WriteString(msg)
+	net.WriteString(name or "")
+	net.WriteString(name1 or "")
 	net.Broadcast()
 end
 
@@ -65,7 +39,7 @@ local adminStuffs = {
 
 		Warden.CleanupDisconnected()
 
-		netNotif(string.format("%s cleaned up all disconnected players' props", ply:GetName()))
+		netNotif("%s cleaned up all disconnected players' props", ply:GetName())
 	end,
 	[Warden.ADMIN_NET.CLEAR_ENTS] = function(ply)
 		if not ply:IsAdmin() then return end
@@ -75,7 +49,7 @@ local adminStuffs = {
 
 		target:WardenCleanupEntities()
 
-		netNotif(string.format("%s cleaned up %s's props", ply:GetName(), target:GetName()))
+		netNotif("%s cleaned up %s's props", ply:GetName(), target:GetName())
 	end,
 	[Warden.ADMIN_NET.FREEZE_ENTS] = function(ply)
 		if not ply:IsAdmin() then return end
@@ -85,11 +59,11 @@ local adminStuffs = {
 
 		target:WardenFreezeEntities()
 
-		netNotif(string.format("%s froze %s's props", ply:GetName(), target:GetName()))
+		netNotif("%s froze %s's props", ply:GetName(), target:GetName())
 	end,
 	[Warden.ADMIN_NET.CLEAR_SETTINGS] = function(ply)
 		if not ply:IsSuperAdmin() then
-			ply:ChatPrint("Only superadmins can change Warden's settings.")
+			Warden.SAInform(ply)
 			return
 		end
 
@@ -97,7 +71,7 @@ local adminStuffs = {
 	end,
 	[Warden.ADMIN_NET.CLEAR_CLASSES] = function(ply)
 		if not ply:IsSuperAdmin() then
-			ply:ChatPrint("Only superadmins can change Warden's settings.")
+			Warden.SAInform(ply)
 			return
 		end
 
@@ -105,7 +79,7 @@ local adminStuffs = {
 	end,
 	[Warden.ADMIN_NET.CLEAR_MODELS] = function(ply)
 		if not ply:IsSuperAdmin() then
-			ply:ChatPrint("Only superadmins can change Warden's settings.")
+			Warden.SAInform(ply)
 			return
 		end
 

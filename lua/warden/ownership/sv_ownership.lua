@@ -1,3 +1,142 @@
+util.AddNetworkString("WardenOwnership")
+
+Warden.Ownership = Warden.Ownership or {}
+Warden.Players = Warden.Players or {}
+Warden.Names = Warden.Names or {}
+
+-- send everything
+-- intended to be internal, but it's global in case it's somehow needed
+function Warden._SendAllOwnerData(plys)
+	net.Start("WardenOwnership")
+	net.WriteUInt(Warden.OWNER_TYPE_NET.ALL_ENT, Warden.OWNER_TYPE_NET_SIZE)
+
+	net.WriteUInt(table.Count(Warden.Players), Warden.OWNER_NET_SIZE)
+	for k, v in pairs(Warden.Players) do
+		local id = k == "World" and Warden.WORLD_ID or util.SteamIDTo64(k)
+		net.WriteUInt64(id)
+
+		net.WriteUInt(table.Count(v), Warden.OWNER_NET_SIZE)
+		for k1, _ in pairs(v) do
+			net.WriteUInt(k1, Warden.OWNER_NET_SIZE)
+		end
+	end
+
+	if plys then
+		net.Send(plys)
+	else
+		net.Broadcast()
+	end
+
+	net.Start("WardenOwnership")
+	net.WriteUInt(Warden.OWNER_TYPE_NET.ALL_PLY, Warden.OWNER_TYPE_NET_SIZE)
+
+	net.WriteUInt(table.Count(Warden.Names), Warden.OWNER_NET_SIZE)
+	for k, v in pairs(Warden.Names) do
+		net.WriteUInt64(util.SteamIDTo64(k))
+		net.WriteString(v)
+	end
+
+	if plys then
+		net.Send(plys)
+	else
+		net.Broadcast()
+	end
+end
+
+local toUpdate = {}
+local toUpdateWorld = {}
+local toUpdateNone = {}
+
+local function updateOwnerData()
+	if not table.IsEmpty(toUpdate) then
+		net.Start("WardenOwnership")
+		net.WriteUInt(Warden.OWNER_TYPE_NET.NEW_ENT, Warden.OWNER_TYPE_NET_SIZE)
+
+		net.WriteUInt(table.Count(toUpdate), Warden.OWNER_NET_SIZE)
+		for k, v in pairs(toUpdate) do
+			local id = k == "World" and Warden.WORLD_ID or util.SteamIDTo64(k)
+			net.WriteUInt64(id)
+
+			net.WriteUInt(table.Count(v), Warden.OWNER_NET_SIZE)
+			for k1, _ in pairs(v) do
+				net.WriteUInt(k1, Warden.OWNER_NET_SIZE)
+			end
+		end
+
+		net.Broadcast()
+	end
+	if not table.IsEmpty(toUpdateWorld) then
+		net.Start("WardenOwnership")
+		net.WriteUInt(Warden.OWNER_TYPE_NET.NEW_WORLD, Warden.OWNER_TYPE_NET_SIZE)
+
+		net.WriteUInt(table.Count(toUpdateWorld), Warden.OWNER_NET_SIZE)
+		for k, _ in pairs(toUpdateWorld) do
+			net.WriteUInt(k, Warden.OWNER_NET_SIZE)
+		end
+
+		net.Broadcast()
+	end
+	if not table.IsEmpty(toUpdateNone) then
+		net.Start("WardenOwnership")
+		net.WriteUInt(Warden.OWNER_TYPE_NET.NEW_NONE, Warden.OWNER_TYPE_NET_SIZE)
+
+		net.WriteUInt(table.Count(toUpdateNone), Warden.OWNER_NET_SIZE)
+		for k, _ in pairs(toUpdateNone) do
+			net.WriteUInt(k, Warden.OWNER_NET_SIZE)
+		end
+
+		net.Broadcast()
+	end
+
+	toUpdate = {}
+	toUpdateWorld = {}
+	toUpdateNone = {}
+end
+
+-- send a new owner entry to everyone
+-- intended to be internal, but it's global in case it's somehow needed
+function Warden._UpdateOwnerData(steamID, entID)
+	toUpdateNone[entID] = nil
+	toUpdateWorld[entID] = nil
+	for _, v in pairs(toUpdate) do
+		v[entID] = nil
+	end
+
+	if steamID == "World" then
+		toUpdateWorld[entID] = true
+	elseif steamID == "None" then
+		toUpdateNone[entID] = true
+	else
+		toUpdate[steamID] = toUpdate[steamID] or {}
+		toUpdate[steamID][entID] = true
+	end
+
+	timer.Create("WardenSendOwnerData", 0, 1, updateOwnerData)
+end
+
+gameevent.Listen("player_activate")
+hook.Add("player_activate", "WardenSendName", function(data)
+	local ply = Player(data.userid)
+
+	Warden.Names[ply:SteamID()] = ply:Nick()
+
+	net.Start("WardenOwnership")
+
+	net.WriteUInt(Warden.OWNER_TYPE_NET.NEW_PLY, Warden.OWNER_TYPE_NET_SIZE)
+	net.WriteUInt64(util.SteamIDTo64(ply:SteamID()))
+	net.WriteString(ply:Nick())
+
+	net.SendOmit(ply)
+end)
+
+net.Receive("WardenOwnership", function(_, ply)
+	Warden._SendAllOwnerData(ply)
+end)
+
+timer.Create("WardenSendAllOwnerData", 120, 0, Warden._SendAllOwnerData)
+
+-- // ownership setting // --
+
 local PLAYER = FindMetaTable("Player")
 
 local function getInternalOwner(ent)

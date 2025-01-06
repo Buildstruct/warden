@@ -5,7 +5,7 @@ function PANEL:Init()
 
 	self.ClassList = {}
 
-	self:AddColumn("class", 1)
+	self:AddColumn(Warden.L("class"), 1)
 
 	local col = self:NewSettingCol("SP", "allow spawning")
 	col.KEY = "_allow"
@@ -231,7 +231,7 @@ function PANEL:OnRowRightClick(_, line)
 			set = true
 		end
 
-		_menu:AddOption("Don't bypass blocked perms", function()
+		_menu:AddOption(Warden.L("Don't bypass blocked perms"), function()
 			Warden.UpdateClassFilter(line.CLASS, "_bypass", set)
 		end):SetIcon("icon16/arrow_undo.png")
 	else
@@ -240,12 +240,12 @@ function PANEL:OnRowRightClick(_, line)
 			set = true
 		end
 
-		_menu:AddOption("Bypass blocked perms", function()
+		_menu:AddOption(Warden.L("Bypass blocked perms"), function()
 			Warden.UpdateClassFilter(line.CLASS, "_bypass", set)
 		end):SetIcon("icon16/arrow_right.png")
 	end
 
-	_menu:AddOption("Remove filter", function()
+	_menu:AddOption(Warden.L("Remove filter"), function()
 		self:RemoveClass(line.CLASS)
 	end):SetIcon("icon16/delete.png")
 
@@ -261,7 +261,7 @@ local black = Color(30, 30, 30)
 function PANEL1:Init()
 	self.Entry = self:Add("WardenTextEntry")
 	self.Entry:Dock(BOTTOM)
-	self.Entry:SetPlaceholderText("Add classes to filter list...")
+	self.Entry:SetPlaceholderText(Warden.L("Add classes to filter list..."))
 
 	function self.Entry.OnEnter(pnl)
 		local elems = string.Explode("[,;|]", pnl:GetValue(), true)
@@ -323,7 +323,7 @@ function PANEL1:Init()
 		if not table.IsEmpty(pnl.ClassList) then return end
 
 		local h1 = pnl:GetHeaderHeight()
-		draw.DrawText("no classes filtered", "WardenEntBig0", w / 2, (h - h1) / 2 - 10 + h1, black, TEXT_ALIGN_CENTER)
+		draw.DrawText(Warden.L("no classes filtered"), "WardenEntBig0", w / 2, (h - h1) / 2 - 10 + h1, black, TEXT_ALIGN_CENTER)
 	end
 end
 

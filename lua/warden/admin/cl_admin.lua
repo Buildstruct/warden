@@ -35,7 +35,7 @@ end
 
 function Warden.ClearSettings(kind)
 	if not LocalPlayer():IsSuperAdmin() then
-		LocalPlayer():ChatPrint("Only superadmins can change Warden's settings.")
+		Warden.SAInform()
 		return
 	end
 
@@ -59,7 +59,11 @@ local adminStuffs = {
 		Warden.ModelFilters = {}
 	end,
 	[Warden.ADMIN_NET.MESSAGE] = function()
-		notification.AddLegacy(net.ReadString(), NOTIFY_CLEANUP, 7)
+		local msg = net.ReadString()
+		local name = net.ReadString()
+		local name1 = net.ReadString()
+
+		notification.AddLegacy(Warden.L(msg, name, name1), NOTIFY_CLEANUP, 7)
 		surface.PlaySound("buttons/button14.wav")
 	end
 }

@@ -20,7 +20,7 @@ end
 function PANEL:NewSettingCol(name, desc, id)
 	local col = self:AddColumn(name, id)
 
-	col:SetTooltip(desc)
+	col:SetTooltip(string.lower(Warden.L(desc)))
 	col:SetTooltipDelay(0)
 	col:SetFixedWidth(30)
 
@@ -156,20 +156,22 @@ end
 vgui.Register("WardenTextEntry", PANEL1, "DTextEntry")
 
 function Warden.Confirmer(panel, label, confirm, callback)
+	label = Warden.L(label)
 	confirm = string.lower(confirm or "confirm")
+
 	local button = panel:Button(label)
 
 	function button:DoClick()
 		button:FocusNext()
 		RunConsoleCommand("-menu")
 
-		Derma_StringRequest(label, string.format("Please type \"%s\" to confirm", confirm), "", function(text)
+		Derma_StringRequest(label, Warden.L("Please type `%s` to confirm", confirm), "", function(text)
 			if string.lower(text) == confirm then
 				callback()
 				surface.PlaySound("buttons/button5.wav")
 			else
 				surface.PlaySound("buttons/button10.wav")
 			end
-		end, nil, "Confirm")
+		end, nil, Warden.L("Confirm"))
 	end
 end

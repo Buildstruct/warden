@@ -7,7 +7,7 @@ function PANEL:Init()
 
 	self.PlyList = {}
 
-	self:AddColumn("name", 1)
+	self:AddColumn(Warden.L("name"), 1)
 	self:Repopulate()
 end
 
@@ -42,7 +42,7 @@ local darkMagenta = Color(192, 0, 192)
 local magenta = Color(255, 192, 255)
 
 function PANEL:MakeGlobalLine()
-	local line = self:AddLine("[[GLOBAL]]")
+	local line = self:AddLine(Warden.L("[[GLOBAL]]"))
 	line.IsGlobal = true
 
 	line:SetSortValue(1, -1)
@@ -193,25 +193,25 @@ function PANEL:OnRowRightClick(_, line)
 
 	local _menu = DermaMenu()
 
-	_menu:AddOption("Copy steamID", function()
+	_menu:AddOption(Warden.L("Copy steamID"), function()
 		SetClipboardText(line.SteamID)
 	end):SetIcon("icon16/page_copy.png")
 
-	_menu:AddOption("Copy name", function()
-		self:RemoveClass(line.Name)
+	_menu:AddOption(Warden.L("Copy name"), function()
+		SetClipboardText(line.Name)
 	end):SetIcon("icon16/page_copy.png")
 
 	if LocalPlayer():IsAdmin() then
 		_menu:AddSpacer()
 
-		local submenu, option = _menu:AddSubMenu("Admin options...")
+		local submenu, option = _menu:AddSubMenu(Warden.L("Admin options..."))
 		option:SetIcon("icon16/user_gray.png")
 
-		submenu:AddOption("Freeze props", function()
+		submenu:AddOption(Warden.L("Freeze props"), function()
 			Warden.FreezeEntities(ply)
 		end):SetIcon("icon16/anchor.png")
 
-		submenu:AddOption("Clean up props", function()
+		submenu:AddOption(Warden.L("Clean up props"), function()
 			Warden.CleanupEntities(ply)
 		end):SetIcon("icon16/cross.png")
 	end

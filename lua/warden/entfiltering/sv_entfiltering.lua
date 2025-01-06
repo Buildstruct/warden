@@ -73,6 +73,25 @@ function Warden.UpdateModelFilter(model, state)
 	net.Broadcast()
 end
 
+function Warden.ClearClassFilters()
+	Warden.ClassFilters = {}
+	Warden._ResetClassCaches()
+	file.Write("warden/classfilters.json", util.TableToJSON(Warden.ClassFilters))
+
+	net.Start("WardenAdmin")
+	net.WriteUInt(Warden.ADMIN_NET.CLEAR_CLASSES, Warden.ADMIN_NET_SIZE)
+	net.Broadcast()
+end
+
+function Warden.ClearModelFilters()
+	Warden.ModelFilters = {}
+	file.Write("warden/modelfilters.json", util.TableToJSON(Warden.ModelFilters))
+
+	net.Start("WardenAdmin")
+	net.WriteUInt(Warden.ADMIN_NET.CLEAR_MODELS, Warden.ADMIN_NET_SIZE)
+	net.Broadcast()
+end
+
 local function sendAll(callback)
 	net.Start("WardenEntFiltering")
 	net.WriteBool(true)
@@ -110,7 +129,7 @@ end)
 
 net.Receive("WardenEntFiltering", function(_, ply)
 	if not ply:IsSuperAdmin() then
-		ply:ChatPrint("Only superadmins can change Warden's settings.")
+		Warden.SAInform(ply)
 		return
 	end
 

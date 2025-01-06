@@ -12,7 +12,7 @@ function PANEL:Init()
 end
 
 function PANEL:MakeColumns()
-	self:AddColumn("permission", 1)
+	self:AddColumn(Warden.L("permission"), 1)
 	self:NewSettingCol("ON", "enabled")
 	self:NewSettingCol("DF", "default")
 	self:NewSettingCol("WA", "world access")

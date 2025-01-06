@@ -1,3 +1,5 @@
+if game.SinglePlayer() then return end
+
 Warden = Warden or {}
 
 if SERVER then
