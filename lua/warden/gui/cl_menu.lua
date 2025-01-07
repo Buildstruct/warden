@@ -6,14 +6,6 @@ local setPermPnl
 local setPermPnlExtra
 local checks = {}
 
-local function addSpacer(panel)
-	local spacer = vgui.Create("Panel")
-	spacer:SetTall(1)
-	panel:AddItem(spacer)
-
-	return spacer
-end
-
 local function setPerms(panel)
 	panel:Help(Warden.L("Configure prop protection settings."))
 
@@ -107,7 +99,7 @@ local function entInfo(panel)
 
 	panel:CheckBox(Warden.L("Enabled"), "warden_entinfo_enabled")
 
-	addSpacer(panel)
+	Warden.AddSpacer(panel)
 
 	panel:CheckBox(Warden.L("Show owner"), "warden_entinfo_show_owner")
 	panel:CheckBox(Warden.L("Show class"), "warden_entinfo_show_class")
@@ -116,7 +108,7 @@ local function entInfo(panel)
 	panel:CheckBox(Warden.L("Show color"), "warden_entinfo_show_color")
 	panel:CheckBox(Warden.L("Show perms"), "warden_entinfo_show_perms")
 
-	addSpacer(panel)
+	Warden.AddSpacer(panel)
 
 	panel:CheckBox(Warden.L("Blur"), "warden_entinfo_blur")
 
@@ -230,7 +222,7 @@ local function serverSettings(panel)
 	setUpCheck(panel:CheckBox(Warden.L("Players can always affect bots")), "always_target_bots")
 	setUpCheck(panel:CheckBox(Warden.L("Allow gravgun punting")), "gravgun_punt")
 
-	addSpacer(panel)
+	Warden.AddSpacer(panel)
 
 	setUpCheck(panel:CheckBox(Warden.L("Freeze players' entities on disconnect")), "freeze_disconnect")
 	setUpCheck(panel:CheckBox(Warden.L("Clean up players' entities on disconnect")), "cleanup_disconnect")
@@ -254,14 +246,19 @@ local function serverSettings(panel)
 		end)
 	end
 
-	addSpacer(panel)
+	Warden.AddSpacer(panel)
 
 	setUpCheck(panel:CheckBox(Warden.L("Admin level needs admin")), "admin_level_needs_admin")
 
 	setUpWang(panel:NumberWang(Warden.L("Default admin level"), nil, Warden.ADMIN_LEVEL_MIN, Warden.ADMIN_LEVEL_MAX, 0), "default_admin_level")
 	setUpWang(panel:NumberWang(Warden.L("AL to bypass filters"), nil, Warden.ADMIN_LEVEL_MIN_1, Warden.ADMIN_LEVEL_MAX, 0), "admin_level_filter_bypass")
 
-	addSpacer(panel)
+	if GetGlobalBool("WardenACF", false) then
+		Warden.AddSpacer(panel)
+		setUpCheck(panel:CheckBox(Warden.L("Override ACF's perms")), "override_acf")
+	end
+
+	Warden.AddSpacer(panel)
 
 	Warden.Confirmer(panel, "Reset server settings", "reset server settings", function()
 		Warden.ClearSettings(Warden.ADMIN_NET.CLEAR_SETTINGS)
@@ -278,10 +275,45 @@ local function serverSettings(panel)
 	end
 end
 
+local function paintOverACF(item)
+	item.OldCPanelFunction = item.OldCPanelFunction or item.CPanelFunction
+
+	function item.CPanelFunction(panel)
+		item.OldCPanelFunction(panel)
+
+		function panel:PaintOver(w, h)
+			local headerHeight = self:GetHeaderHeight()
+
+			if headerHeight >= h then return end
+			if not Warden.GetServerBool("override_acf", false) then return end
+
+			surface.SetDrawColor(255, 0, 0)
+			surface.DrawOutlinedRect(0, headerHeight, w, h - headerHeight, 2)
+		end
+	end
+end
+
+local function acfOverride()
+	local toolMenu = spawnmenu.GetToolMenu("Utilities")
+	for _, v in ipairs(toolMenu) do
+		if v.ItemName ~= "ACF" then continue end
+
+		for _, v1 in ipairs(v) do
+			paintOverACF(v1)
+		end
+	end
+end
+
 hook.Add("PopulateToolMenu", "Warden", function()
 	spawnmenu.AddToolMenuOption("Utilities", "Warden", "warden_setperms", Warden.L("Prop Protection"), "", "", setPerms)
 	spawnmenu.AddToolMenuOption("Utilities", "Warden", "warden_entinfo", Warden.L("Entity Info"), "", "", entInfo)
 	spawnmenu.AddToolMenuOption("Utilities", "Warden", "warden_serversettings", Warden.L("Server Settings"), "", "", serverSettings)
+
+	timer.Simple(0, function()
+		if GetGlobalBool("WardenACF", false) then
+			acfOverride()
+		end
+	end)
 end)
 
 hook.Add("SpawnMenuOpened", "Warden", function()
@@ -305,44 +337,6 @@ hook.Add("WardenRepopSetPerms", "Warden", function()
 		end
 	end)
 end)
-
-local function crossBlock(icon, model, class)
-	icon.WardenPaintOver = icon.WardenPaintOver or icon.PaintOver
-
-	function icon.PaintOver(pnl, w, h)
-		pnl:WardenPaintOver(w, h)
-
-		if not Warden.IsModelBlocked(model) and not Warden.IsClassBlocked(class) then return end
-
-		local r = math.min(w, h) * 0.5
-		local cX, cY = w / 2, h / 2
-
-		local verts = {
-			{ x = 0.366, y = 0 },
-			{ x = 0.866, y = 0.5 },
-			{ x = 0.5, y = 0.866 },
-			{ x = 0, y = 0.366 },
-			{ x = -0.5, y = 0.866 },
-			{ x = -0.866, y = 0.5 },
-			{ x = -0.366, y = 0 },
-			{ x = -0.866, y = -0.5 },
-			{ x = -0.5, y = -0.866 },
-			{ x = 0, y = -0.366 },
-			{ x = 0.5, y = -0.866 },
-			{ x = 0.866, y = -0.5 },
-			{ x = 0.366, y = 0 }
-		}
-
-		for _, v in ipairs(verts) do
-			v.x = v.x * r + cX
-			v.y = v.y * r + cY
-		end
-
-		surface.SetDrawColor(255, 0, 0, 96)
-		draw.NoTexture()
-		surface.DrawPoly(verts)
-	end
-end
 
 local function modelFilter(mdl, add)
 	if Warden.GetServerBool("model_filter_whitelist", false) then
@@ -372,7 +366,7 @@ local function overrideModelCType(container, obj)
 
 	-- the functions to detect what class a model
 	-- belongs to are unreliable clientside
-	crossBlock(icon, mdl, "prop_*")
+	Warden.CrossBlock(icon, mdl, "prop_*")
 
 	-- override
 	function icon.OpenMenu(pnl)
@@ -463,7 +457,7 @@ local function overrideGenericCType(container, obj, func)
 	local icon = func(container, obj)
 	if not icon then return end
 
-	crossBlock(icon, nil, obj.spawnname)
+	Warden.CrossBlock(icon, nil, obj.spawnname)
 
 	return icon
 end

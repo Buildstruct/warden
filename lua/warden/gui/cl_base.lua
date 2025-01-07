@@ -155,6 +155,7 @@ end
 
 vgui.Register("WardenTextEntry", PANEL1, "DTextEntry")
 
+-- add a button to a dform that asks for typed confirmation when pressed
 function Warden.Confirmer(panel, label, confirm, callback)
 	label = Warden.L(label)
 	confirm = string.lower(confirm or "confirm")
@@ -174,4 +175,52 @@ function Warden.Confirmer(panel, label, confirm, callback)
 			end
 		end, nil, Warden.L("Confirm"))
 	end
+end
+
+-- renders a red cross when the provided model or class is blocked
+function Warden.CrossBlock(icon, model, class)
+	icon.WardenPaintOver = icon.WardenPaintOver or icon.PaintOver
+
+	function icon.PaintOver(pnl, w, h)
+		pnl:WardenPaintOver(w, h)
+
+		if not Warden.IsModelBlocked(model) and not Warden.IsClassBlocked(class) then return end
+
+		local r = math.min(w, h) * 0.5
+		local cX, cY = w / 2, h / 2
+
+		local verts = {
+			{ x = 0.366, y = 0 },
+			{ x = 0.866, y = 0.5 },
+			{ x = 0.5, y = 0.866 },
+			{ x = 0, y = 0.366 },
+			{ x = -0.5, y = 0.866 },
+			{ x = -0.866, y = 0.5 },
+			{ x = -0.366, y = 0 },
+			{ x = -0.866, y = -0.5 },
+			{ x = -0.5, y = -0.866 },
+			{ x = 0, y = -0.366 },
+			{ x = 0.5, y = -0.866 },
+			{ x = 0.866, y = -0.5 },
+			{ x = 0.366, y = 0 }
+		}
+
+		for _, v in ipairs(verts) do
+			v.x = v.x * r + cX
+			v.y = v.y * r + cY
+		end
+
+		surface.SetDrawColor(255, 0, 0, 96)
+		draw.NoTexture()
+		surface.DrawPoly(verts)
+	end
+end
+
+-- add spacing to a dform
+function Warden.AddSpacer(panel)
+	local spacer = vgui.Create("Panel")
+	spacer:SetTall(1)
+	panel:AddItem(spacer)
+
+	return spacer
 end

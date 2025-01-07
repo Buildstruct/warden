@@ -135,7 +135,7 @@ Warden.PERMISSION_TOOL    = Warden.RegisterPermissionSimple("tool", "toolgun", 2
 Warden.PERMISSION_PHYSGUN = Warden.RegisterPermissionSimple("physgun", "physgun", 1, nil, "bs/aegis_physgun.png", "icon16/flag_blue.png")
 Warden.PERMISSION_GRAVGUN = Warden.RegisterPermissionSimple("gravgun", "gravgun", 1, true, "bs/aegis_gravgun.png", "icon16/flag_orange.png")
 
-Warden.PERMISSION_USE, use     = Warden.RegisterPermissionSimple("use", "use", 1, true, "bs/aegis_use.png", "icon16/mouse.png")
+Warden.PERMISSION_USE, use = Warden.RegisterPermissionSimple("use", "use", 1, true, "bs/aegis_use.png", "icon16/mouse.png")
 use:SetBypassTouch(true, true)
 
 Warden.PERMISSION_DAMAGE  = Warden.RegisterPermissionSimple("damage", "damage", 2, true, "bs/aegis_damage.png", "icon16/sport_raquet.png")

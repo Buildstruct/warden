@@ -32,7 +32,7 @@ net.Receive("WardenInitialize", function(_, ply)
 end)
 
 net.Receive("WardenUpdatePermission", function(_, ply)
-	local permID = net.ReadUInt(8)
+	local permID = net.ReadUInt(Warden.PERM_NET_SIZE)
 	if not Warden.GetPermission(permID) then return end
 
 	local granting = net.ReadBool()
@@ -57,7 +57,7 @@ end)
 local function networkPermission(ply, receiver, permID, granting)
 	net.Start("WardenUpdatePermission")
 	net.WriteBool(granting) -- Granting = true, Revoking = false
-	net.WriteUInt(permID, 8) -- permID index
+	net.WriteUInt(permID, Warden.PERM_NET_SIZE) -- permID index
 	net.WriteEntity(ply) -- Player granting the permID
 	if receiver then
 		net.WriteBool(false) -- Is Global permID

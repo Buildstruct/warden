@@ -29,7 +29,7 @@ end)
 
 net.Receive("WardenUpdatePermission", function()
 	local granting = net.ReadBool()
-	local permission = net.ReadUInt(8)
+	local permission = net.ReadUInt(Warden.PERM_NET_SIZE)
 	local granter = net.ReadEntity()
 
 	if not IsValid(granter) or not granter:IsPlayer() then
@@ -50,7 +50,7 @@ end)
 
 local function networkPermission(receiver, permission, granting)
 	net.Start("WardenUpdatePermission")
-	net.WriteUInt(permission, 8)
+	net.WriteUInt(permission, Warden.PERM_NET_SIZE)
 	net.WriteBool(granting)
 	if receiver then
 		net.WriteBool(true)
@@ -84,7 +84,6 @@ end
 
 gameevent.Listen("player_disconnect")
 hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
-	local steamID = data.networkid
-	Warden.PlyPerms[steamID] = nil
+	Warden.PlyPerms[data.networkid] = nil
 end)
 
