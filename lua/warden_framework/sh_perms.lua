@@ -193,8 +193,7 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 			return false
 		end
 
-		local valid, world = Warden.IsValid(granter)
-		if not world and (not valid or not granter:IsPlayer()) and receiverOwner:GetInfoNum("warden_touch", 1) == 0 then
+		if receiverOwner ~= granterOwner and receiverOwner:GetInfoNum("warden_touch", 1) == 0 then
 			return false
 		end
 	end

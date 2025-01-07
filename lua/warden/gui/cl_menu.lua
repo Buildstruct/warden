@@ -9,7 +9,7 @@ local checks = {}
 local function setPerms(panel)
 	panel:Help(Warden.L("Configure prop protection settings."))
 
-	panel:CheckBox(Warden.L("Let me touch entities"), "warden_touch")
+	panel:CheckBox(Warden.L("Let me touch others' entities"), "warden_touch")
 	panel:CheckBox(Warden.L("Let me touch my own entities"), "warden_touch_self")
 
 	setPermPnl = vgui.Create("WardenSetPerms")
