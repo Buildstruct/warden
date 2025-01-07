@@ -24,7 +24,7 @@ local plyMeta = FindMetaTable("Player")
 function plyMeta:CPPIGetFriends()
 	local friends = {}
 
-	for _, ply in ipairs(player.GetAll()) do
+	for _, ply in player.Iterator() do
 		if Warden.CheckPermission(ply, self, Warden.PERMISSION_TOOL) then
 			table.insert(friends, ply)
 		end
@@ -39,7 +39,7 @@ function entMeta:CPPIGetOwner()
 	local ownerEnt = Warden.GetOwner(self)
 	local steamID = Warden.GetOwnerID(self)
 
-	if Warden.IsValidOwner(ownerEnt) then
+	if Warden.IsValid(ownerEnt) then
 		return ownerEnt, steamID
 	elseif steamID ~= "" then
 		return nil, steamID
@@ -48,11 +48,7 @@ end
 
 if SERVER then
 	function entMeta:CPPISetOwner(ply)
-		if ply then
-			return Warden.SetOwner(self, ply)
-		else
-			return Warden.ClearOwner(self)
-		end
+		return Warden.SetOwner(self, ply)
 	end
 
 	function entMeta:CPPISetOwnerUID()
@@ -72,7 +68,12 @@ if SERVER then
 	function entMeta:CPPICanPickup(ply)
 		return Warden.CheckPermission(ply, self, Warden.PERMISSION_GRAVGUN)
 	end
+
 	function entMeta:CPPICanPunt(ply)
+		if not Warden.GetServerBool("gravgun_punt", true) and not Warden.PlyBypassesFilters(ply) then
+			return false
+		end
+
 		return Warden.CheckPermission(ply, self, Warden.PERMISSION_GRAVGUN)
 	end
 

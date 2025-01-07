@@ -1,6 +1,6 @@
 local enabled = CreateClientConVar("warden_entinfo_enabled", "1", true, false, "Show the entity information HUD element", 0, 1)
 local showOwner = CreateClientConVar("warden_entinfo_show_owner", "1", true, false, "Show the owner of the entity you're aiming at", 0, 1)
-local showClass = CreateClientConVar("warden_entinfo_show_class", "1", true, false, "Show the entity class of the entity you're aiming at", 0, 1)
+local showClass = CreateClientConVar("warden_entinfo_show_class", "0", true, false, "Show the entity class of the entity you're aiming at", 0, 1)
 local showModel = CreateClientConVar("warden_entinfo_show_model", "1", true, false, "Show the model path of the entity you're aiming at", 0, 1)
 local showMaterial = CreateClientConVar("warden_entinfo_show_material", "0", true, false, "Show the material path of the entity you're aiming at", 0, 1)
 local showColor = CreateClientConVar("warden_entinfo_show_color", "0", true, false, "Show the color of the entity you're aiming at", 0, 1)
@@ -122,14 +122,14 @@ function PANEL:ShowOwner(w)
 
 	local ownerID = self.Entity:WardenGetOwnerID()
 	if ownerID == "World" then
-		ownerName = "[[WORLD]]"
+		ownerName = Warden.L("[[WORLD]]")
 		r, g, b = 255, 128, 255
 	elseif not ownerName or not ownerID or ownerID == "" then
-		ownerName = "[[NONE]]"
+		ownerName = Warden.L("[[NONE]]")
 		r, g, b = 255, 192, 128
 	end
 
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>owner: </color><color=%s,%s,%s>%s</color></font>", self:GetFont(true), r, g, b, ownerName))
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color><color=%s,%s,%s>%s</color></font>", self:GetFont(true), Warden.L("owner:"), r, g, b, ownerName))
 	self:DrawParsed(w, parsed)
 end
 
@@ -138,7 +138,7 @@ function PANEL:ShowClass(w)
 		return
 	end
 
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>class: </color>%s (%s)</font>", self:GetFont(), self.Entity:GetClass(), self.Entity:EntIndex()))
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color>%s (%s)</font>", self:GetFont(), Warden.L("class:"), self.Entity:GetClass(), self.Entity:EntIndex()))
 	self:DrawParsed(w, parsed)
 end
 
@@ -147,7 +147,7 @@ function PANEL:ShowModel(w)
 		return
 	end
 
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>model: </color>%s</font>", self:GetFont(), self.Entity:GetModel()))
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color>%s</font>", self:GetFont(), Warden.L("model:"), self.Entity:GetModel()))
 	self:DrawParsed(w, parsed)
 end
 
@@ -164,7 +164,7 @@ function PANEL:ShowMaterial(w)
 		return
 	end
 
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>material: </color>%s</font>", self:GetFont(), mat))
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color>%s</font>", self:GetFont(), Warden.L("material:"), mat))
 	self:DrawParsed(w, parsed)
 end
 
@@ -180,7 +180,7 @@ function PANEL:ShowColor(w)
 
 	local r, g, b, a = col:Unpack()
 
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>color: </color><color=%s,%s,%s>●</color> [<color=255,128,128>%s</color>, <color=128,255,128>%s</color>, <color=128,128,255>%s</color>, %s]</font>", self:GetFont(), r, g, b, r, g, b, a))
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color><color=%s,%s,%s>●</color> [<color=255,128,128>%s</color>, <color=128,255,128>%s</color>, <color=128,128,255>%s</color>, %s]</font>", self:GetFont(), Warden.L("color:"), r, g, b, r, g, b, a))
 	self:DrawParsed(w, parsed)
 end
 
@@ -193,7 +193,7 @@ function PANEL:ShowPerms(w)
 	local shift = (self.FontSize or 0) * 3
 	surface.SetDrawColor(255, 255, 255)
 	for k, v in pairs(Warden.GetAllPermissions(LocalPlayer(), self.Entity)) do
-		surface.SetMaterial(v.icon)
+		surface.SetMaterial(v:GetIcon())
 		surface.DrawTexturedRect(w - plus - 22, self.ItemY + shift, 16, 16)
 		plus = plus + 20
 	end
@@ -202,7 +202,7 @@ function PANEL:ShowPerms(w)
 		return
 	end
 
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>perms: </color></font>", self:GetFont()))
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color></font>", self:GetFont(), Warden.L("perms:")))
 	self:DrawParsed(w - plus, parsed, plus)
 end
 
