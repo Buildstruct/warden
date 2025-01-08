@@ -184,9 +184,11 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 	local receiverOwner = Warden.GetOwner(receiver)
 	local granterOwner = Warden.GetOwner(granter)
 
-	if not receiverOwner then return false end
+	if not receiverOwner then return perm:GetDefault() end
 
 	local validRec = IsValid(receiverOwner)
+
+	-- bypasssing
 
 	if validRec and receiver == receiverOwner and receiver ~= granter and not perm:GetBypassTouch() then
 		if receiverOwner == granterOwner then
@@ -206,6 +208,8 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 
 	if not granterOwner then return perm:GetDefault() end
 
+	-- world
+
 	if (receiverOwner.IsWorld and receiverOwner:IsWorld()) or (granterOwner.IsWorld and granterOwner:IsWorld()) then
 		local wOverride = hook.Run("WardenCheckPermissionWorld", receiverOwner, granterOwner, perm)
 		if wOverride ~= nil then return wOverride end
@@ -213,8 +217,7 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 		return perm:GetWorldAccess()
 	end
 
-	if not validRec then return false end
-	if not IsValid(granterOwner) then return perm:GetDefault() end
+	if not validRec or not IsValid(granterOwner) then return perm:GetDefault() end
 
 	-- both receiverOwner and granterOwner are confirmed players
 
