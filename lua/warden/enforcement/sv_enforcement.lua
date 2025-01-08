@@ -22,10 +22,9 @@ hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
 		end
 	end
 
-	if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then return true end
-
-	local inflictOwner = Warden.GetOwner(dmg:GetInflictor())
-	if not Warden.CheckPermission(inflictOwner, ent, Warden.PERMISSION_DAMAGE) then return true end
+	if Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then return end
+	if Warden.CheckPermission(dmg:GetInflictor(), ent, Warden.PERMISSION_DAMAGE) then return end
+	return true
 end)
 
 hook.Add("CanEditVariable", "Warden", function(ent, ply)
