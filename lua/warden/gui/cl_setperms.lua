@@ -86,6 +86,7 @@ function PANEL:MakePlyLine(ply)
 	local line = self:AddLine(ply:GetName())
 	line.Name = ply:GetName()
 	line.SteamID = ply:SteamID()
+	line.Ply = ply
 
 	line:SetTooltip(line.SteamID)
 
@@ -208,11 +209,11 @@ function PANEL:OnRowRightClick(_, line)
 		option:SetIcon("icon16/user_gray.png")
 
 		submenu:AddOption(Warden.L("Freeze props"), function()
-			Warden.FreezeEntities(ply)
+			Warden.FreezeEntities(line.Ply)
 		end):SetIcon("icon16/anchor.png")
 
 		submenu:AddOption(Warden.L("Clean up props"), function()
-			Warden.CleanupEntities(ply)
+			Warden.CleanupEntities(line.Ply)
 		end):SetIcon("icon16/cross.png")
 	end
 
