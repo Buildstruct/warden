@@ -119,18 +119,29 @@ local function entInfo(panel)
 	combo:AddChoice(Warden.L("Large"), 2)
 end
 
-local function setUpCheck(check, setting)
+-- make a serversetting-controlled check
+-- if used outside of the settings hooks this will not update
+function Warden.SetUpCheck(panel, label, setting)
+	local check = panel:CheckBox(Warden.L(label))
+
+	function check:OnChange(val)
+		Warden.SetServerSetting(setting, val)
+	end
+
+	if not WARDEN_SETTINGS then return check end
+
 	table.insert(checks, function()
 		if not IsValid(check) then return end
 		check:SetChecked(Warden.GetServerBool(setting))
 	end)
 
-	function check:OnChange(val)
-		Warden.SetServerSetting(setting, val)
-	end
+	return check
 end
 
-local function setUpWang(numWang, setting)
+-- make a serversetting-controlled wang
+-- if used outside of the settings hooks this will not update
+function Warden.SetUpWang(panel, label, setting, min, max)
+	local numWang = panel:NumberWang(Warden.L(label), nil, min, max, 0)
 	numWang:HideWang()
 
 	function numWang:PerformLayout()
@@ -138,16 +149,44 @@ local function setUpWang(numWang, setting)
 		self:AlignBottom()
 	end
 
+	function numWang:OnValueChanged(val)
+		Warden.SetServerSetting(setting, math.Clamp(math.floor(val), min, max))
+	end
+
+	if not WARDEN_SETTINGS then return numWang end
+
 	table.insert(checks, function()
 		if not IsValid(numWang) then return end
 		numWang:SetText(Warden.GetServerSetting(setting))
 	end)
 
-	local min, max = numWang:GetMin(), numWang:GetMax()
+	return numWang
+end
 
-	function numWang:OnValueChanged(val)
-		Warden.SetServerSetting(setting, math.Clamp(math.floor(val), min, max))
+-- make a serversetting-controlled slider
+-- if used outside of the settings hooks this will not update
+function Warden.SetUpSlider(panel, label, setting, min, max)
+	local slider = panel:NumSlider(Warden.L(label), nil, min, max, 0)
+
+	function slider:OnValueChanged(val)
+		timer.Create("WardenUpdating_" .. setting, 0.5, 1, function()
+			Warden.SetServerSetting(setting, math.floor(val))
+		end)
 	end
+
+	if not WARDEN_SETTINGS then return slider end
+
+	table.insert(checks, function()
+		if not IsValid(slider) then return end
+
+		local val = Warden.GetServerSetting(setting)
+		slider.Scratch:SetFloatValue(val)
+		slider.TextArea:SetValue(slider.Scratch:GetTextValue())
+		slider.Slider:SetSlideX(slider.Scratch:GetFraction())
+		slider:SetCookie("slider_val", val)
+	end)
+
+	return slider
 end
 
 local classFilterPnl
@@ -155,6 +194,7 @@ local modelFilterPnl
 
 local function serverSettings(panel)
 	checks = {}
+	WARDEN_SETTINGS = true
 
 	panel:Help(Warden.L("Configure the server's entity permissions."))
 
@@ -180,7 +220,7 @@ local function serverSettings(panel)
 
 	panel:Help(Warden.L("Configure class filters."))
 
-	setUpCheck(panel:CheckBox(Warden.L("Filters bypass blocked perms")), "class_filter_bypass")
+	Warden.SetUpCheck(panel, "Filters bypass blocked perms", "class_filter_bypass")
 
 	panel:ControlHelp(Warden.L("Shown on list using gold outlines"))
 	panel:ControlHelp(Warden.L("Right click to set per-filter"))
@@ -195,7 +235,7 @@ local function serverSettings(panel)
 
 	panel:Help(Warden.L("Block models from being spawned."))
 
-	setUpCheck(panel:CheckBox(Warden.L("Block list is a whitelist")), "model_filter_whitelist")
+	Warden.SetUpCheck(panel, "Block list is a whitelist", "model_filter_whitelist")
 
 	modelFilterPnl = vgui.Create("WardenModelFilters")
 	panel:AddItem(modelFilterPnl)
@@ -219,44 +259,26 @@ local function serverSettings(panel)
 
 	panel:Help(Warden.L("Configure general server settings."))
 
-	setUpCheck(panel:CheckBox(Warden.L("Players can always affect bots")), "always_target_bots")
-	setUpCheck(panel:CheckBox(Warden.L("Allow gravgun punting")), "gravgun_punt")
+	Warden.SetUpCheck(panel, "Players can always affect bots", "always_target_bots")
+	Warden.SetUpCheck(panel, "Allow gravgun punting", "gravgun_punt")
+
+	hook.Run("WardenSettingsPlayers", panel)
 
 	Warden.AddSpacer(panel)
 
-	setUpCheck(panel:CheckBox(Warden.L("Freeze players' entities on disconnect")), "freeze_disconnect")
-	setUpCheck(panel:CheckBox(Warden.L("Clean up players' entities on disconnect")), "cleanup_disconnect")
+	Warden.SetUpCheck(panel, "Freeze players' entities on disconnect", "freeze_disconnect")
+	Warden.SetUpCheck(panel, "Clean up players' entities on disconnect", "cleanup_disconnect")
 
-	local slider = panel:NumSlider(Warden.L("Clean up time"), nil, 0, 1000, 0)
-	slider:SetDefaultValue(Warden.GetDefaultServerSetting("cleanup_time"))
-
-	table.insert(checks, function()
-		if not IsValid(slider) then return end
-
-		local val = Warden.GetServerSetting("cleanup_time")
-		slider.Scratch:SetFloatValue(val)
-		slider.TextArea:SetValue(slider.Scratch:GetTextValue())
-		slider.Slider:SetSlideX(slider.Scratch:GetFraction())
-		slider:SetCookie("slider_val", val)
-	end)
-
-	function slider:OnValueChanged(val)
-		timer.Create("WardenUpdatingCleanup", 0.5, 1, function()
-			Warden.SetServerSetting("cleanup_time", math.floor(val))
-		end)
-	end
+	Warden.SetUpSlider(panel, "Clean up time", "cleanup_time", 0, 1000)
 
 	Warden.AddSpacer(panel)
 
-	setUpCheck(panel:CheckBox(Warden.L("Admin level needs admin")), "admin_level_needs_admin")
+	Warden.SetUpCheck(panel, "Admin level needs admin", "admin_level_needs_admin")
 
-	setUpWang(panel:NumberWang(Warden.L("Default admin level"), nil, Warden.ADMIN_LEVEL_MIN, Warden.ADMIN_LEVEL_MAX, 0), "default_admin_level")
-	setUpWang(panel:NumberWang(Warden.L("AL to bypass filters"), nil, Warden.ADMIN_LEVEL_MIN_1, Warden.ADMIN_LEVEL_MAX, 0), "admin_level_filter_bypass")
+	Warden.SetUpWang(panel, "Default admin level", "default_admin_level", Warden.ADMIN_LEVEL_MIN, Warden.ADMIN_LEVEL_MAX)
+	Warden.SetUpWang(panel, "AL to bypass filters", "admin_level_filter_bypass", Warden.ADMIN_LEVEL_MIN_1, Warden.ADMIN_LEVEL_MAX)
 
-	if GetGlobalBool("WardenACF", false) then
-		Warden.AddSpacer(panel)
-		setUpCheck(panel:CheckBox(Warden.L("Override ACF's perms")), "override_acf")
-	end
+	hook.Run("WardenSettingsExtra", panel)
 
 	Warden.AddSpacer(panel)
 
@@ -270,37 +292,10 @@ local function serverSettings(panel)
 		Warden.ClearSettings(Warden.ADMIN_NET.CLEAR_MODELS)
 	end)
 
+	WARDEN_SETTINGS = nil
+
 	for _, v in ipairs(checks) do
 		v()
-	end
-end
-
-local function paintOverACF(item)
-	item.OldCPanelFunction = item.OldCPanelFunction or item.CPanelFunction
-
-	function item.CPanelFunction(panel)
-		item.OldCPanelFunction(panel)
-
-		function panel:PaintOver(w, h)
-			local headerHeight = self:GetHeaderHeight()
-
-			if headerHeight >= h then return end
-			if not Warden.GetServerBool("override_acf", false) then return end
-
-			surface.SetDrawColor(255, 0, 0)
-			surface.DrawOutlinedRect(0, headerHeight, w, h - headerHeight, 2)
-		end
-	end
-end
-
-local function acfOverride()
-	local toolMenu = spawnmenu.GetToolMenu("Utilities")
-	for _, v in ipairs(toolMenu) do
-		if v.ItemName ~= "ACF" then continue end
-
-		for _, v1 in ipairs(v) do
-			paintOverACF(v1)
-		end
 	end
 end
 
@@ -308,12 +303,6 @@ hook.Add("PopulateToolMenu", "Warden", function()
 	spawnmenu.AddToolMenuOption("Utilities", "Warden", "warden_setperms", Warden.L("Prop Protection"), "", "", setPerms)
 	spawnmenu.AddToolMenuOption("Utilities", "Warden", "warden_entinfo", Warden.L("Entity Info"), "", "", entInfo)
 	spawnmenu.AddToolMenuOption("Utilities", "Warden", "warden_serversettings", Warden.L("Server Settings"), "", "", serverSettings)
-
-	timer.Simple(0, function()
-		if GetGlobalBool("WardenACF", false) then
-			acfOverride()
-		end
-	end)
 end)
 
 hook.Add("SpawnMenuOpened", "Warden", function()
