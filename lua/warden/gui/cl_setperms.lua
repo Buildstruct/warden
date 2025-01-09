@@ -145,7 +145,7 @@ function PANEL:Repopulate()
 		end
 	end
 
-	for k, v in player.Iterator() do
+	for k, v in ipairs(player.GetHumans()) do
 		if IsValid(self.PlyList[v:UserID()]) then continue end
 
 		local line

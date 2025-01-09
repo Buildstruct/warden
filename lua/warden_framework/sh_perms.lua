@@ -16,8 +16,6 @@ function Warden.CreatePermission(key)
 end
 
 -- register a permission table to the server
--- should be done immediately to allow servers to set the convars on startup
--- try setting something under 'warden' in your lua folder to do this
 function Warden.RegisterPermission(tbl, key)
 	local id = table.insert(Warden.Permissions, tbl)
 
@@ -131,14 +129,14 @@ makeGetSet("BypassTouch", "bypass_touch_", "Bool", false)
 -- // default permission definitions // --
 
 Warden.PERMISSION_ALL     = Warden.RegisterPermissionSimple("whitelist", "whitelist", 3)
-Warden.PERMISSION_TOOL    = Warden.RegisterPermissionSimple("tool", "toolgun", 2, nil, "bs/aegis_tool.png", "icon16/wand.png")
-Warden.PERMISSION_PHYSGUN = Warden.RegisterPermissionSimple("physgun", "physgun", 1, nil, "bs/aegis_physgun.png", "icon16/wrench.png")
-Warden.PERMISSION_GRAVGUN = Warden.RegisterPermissionSimple("gravgun", "gravgun", 1, true, "bs/aegis_gravgun.png", "icon16/wrench_orange.png")
+Warden.PERMISSION_TOOL    = Warden.RegisterPermissionSimple("tool", "toolgun", 2, nil, "warden/tool.png", "icon16/wand.png")
+Warden.PERMISSION_PHYSGUN = Warden.RegisterPermissionSimple("physgun", "physgun", 1, nil, "warden/physgun.png", "icon16/wrench.png")
+Warden.PERMISSION_GRAVGUN = Warden.RegisterPermissionSimple("gravgun", "gravgun", 1, true, "warden/gravgun.png", "icon16/wrench_orange.png")
 
-Warden.PERMISSION_USE, use = Warden.RegisterPermissionSimple("use", "use", 1, true, "bs/aegis_use.png", "icon16/mouse.png")
+Warden.PERMISSION_USE, use = Warden.RegisterPermissionSimple("use", "use", 1, true, "warden/use.png", "icon16/mouse.png")
 use:SetBypassTouch(true, true)
 
-Warden.PERMISSION_DAMAGE  = Warden.RegisterPermissionSimple("damage", "damage", 2, true, "bs/aegis_damage.png", "icon16/gun.png")
+Warden.PERMISSION_DAMAGE  = Warden.RegisterPermissionSimple("damage", "damage", 2, true, "warden/damage.png", "icon16/gun.png")
 
 -- // helpers and global funcs // --
 
@@ -259,8 +257,16 @@ hook.Add("WardenGetAllPerms", "WardenWhitelist", function(receiver, granter)
 	end
 end)
 
+local pCache = {}
+local function cacheID(receiver, granter)
+	return string.format("%s%s", receiver or "$", granter or "$")
+end
+
 -- get every perm or every perm for a specific pair of ents
 function Warden.GetAllPermissions(receiver, granter)
+	local cID = cacheID(receiver, granter)
+	if pCache[cID] then return pCache[cID] end
+
 	if not receiver and not granter then
 		local perms = {}
 		for k, v in pairs(Warden.Permissions) do
@@ -269,11 +275,15 @@ function Warden.GetAllPermissions(receiver, granter)
 			end
 		end
 
+		pCache[cID] = perms
 		return perms
 	end
 
 	local override = hook.Run("WardenGetAllPerms", receiver, granter)
-	if override ~= nil then return override end
+	if override ~= nil then
+		pCache[cID] = override
+		return override
+	end
 
 	local perms = {}
 
@@ -283,8 +293,13 @@ function Warden.GetAllPermissions(receiver, granter)
 		end
 	end
 
+	pCache[cID] = perms
 	return perms
 end
+
+timer.Create("WardenPCache", 0.5, 0, function()
+	pCache = {}
+end)
 
 -- intended to be internal
 function Warden._CheckPerm(receiver, granter, perm, receiverOwner, granterOwner, validRec, validGra)

@@ -4,6 +4,11 @@ Warden = Warden or {}
 
 if SERVER then
 	file.CreateDir("warden")
+	resource.AddSingleFile("materials/warden/tool.png")
+	resource.AddSingleFile("materials/warden/physgun.png")
+	resource.AddSingleFile("materials/warden/gravgun.png")
+	resource.AddSingleFile("materials/warden/use.png")
+	resource.AddSingleFile("materials/warden/damage.png")
 end
 
 local function addFile(File, directory)

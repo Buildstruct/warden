@@ -1,7 +1,7 @@
 local enabled = CreateClientConVar("warden_entinfo_enabled", "1", true, false, "Show the entity information HUD element", 0, 1)
 local showOwner = CreateClientConVar("warden_entinfo_show_owner", "1", true, false, "Show the owner of the entity you're aiming at", 0, 1)
 local showClass = CreateClientConVar("warden_entinfo_show_class", "0", true, false, "Show the entity class of the entity you're aiming at", 0, 1)
-local showModel = CreateClientConVar("warden_entinfo_show_model", "1", true, false, "Show the model path of the entity you're aiming at", 0, 1)
+local showModel = CreateClientConVar("warden_entinfo_show_model", "0", true, false, "Show the model path of the entity you're aiming at", 0, 1)
 local showMaterial = CreateClientConVar("warden_entinfo_show_material", "0", true, false, "Show the material path of the entity you're aiming at", 0, 1)
 local showColor = CreateClientConVar("warden_entinfo_show_color", "0", true, false, "Show the color of the entity you're aiming at", 0, 1)
 local showPerms = CreateClientConVar("warden_entinfo_show_perms", "1", true, false, "Show the permissions you have with the entity you're aiming at", 0, 1)
