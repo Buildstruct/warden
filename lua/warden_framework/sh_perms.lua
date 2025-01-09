@@ -175,6 +175,34 @@ end
 
 Warden.GetPerm = Warden.GetPermission
 
+local function checkPerm(receiver, granter, receiverOwner, granterOwner, validRec, validGra, perm)
+	-- check if the granter ent is filtered
+	local bypass = Warden._GetEntPermBypass(granter, perm)
+	if bypass ~= nil then
+		if bypass then return true end
+		if not validRec or not Warden.PlyBypassesFilters(receiverOwner) then return false end
+	end
+
+	if validRec and perm:GetAdminLevel() <= receiverOwner:WardenGetAdminLevel() then return true, true end
+	if validGra and granterOwner:IsBot() and Warden.GetServerBool("always_target_bots", false) then return true end
+
+	if not granterOwner or not receiverOwner then return perm:GetDefault() end
+
+	if (receiverOwner.IsWorld and receiverOwner:IsWorld()) or (granterOwner.IsWorld and granterOwner:IsWorld()) then
+		return perm:GetWorldAccess()
+	end
+
+	if not validRec or not validGra then return perm:GetDefault() end
+
+	-- both receiverOwner and granterOwner are confirmed players
+
+	if receiverOwner == granterOwner then return true end
+
+	granterOwner:WardenEnsureSetup()
+
+	return Warden._GetPermStatus(receiverOwner, granterOwner, perm)
+end
+
 -- check if something has the permission to affect another thing
 -- keyOrID is the key or id of a permission
 function Warden.CheckPermission(receiver, granter, keyOrID)
@@ -184,64 +212,44 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 	local receiverOwner = Warden.GetOwner(receiver)
 	local granterOwner = Warden.GetOwner(granter)
 
-	if not receiverOwner then return perm:GetDefault() end
-
 	local validRec = IsValid(receiverOwner)
+	local validGra = IsValid(granterOwner)
 
-	-- bypasssing
-
+	-- check receiver's touch settings
 	if validRec and receiver == receiverOwner and receiver ~= granter and not perm:GetBypassTouch() then
 		if receiverOwner == granterOwner then
 			if receiverOwner:GetInfoNum("warden_touch_self", 1) == 0 then return false end
-		else
+		elseif not IsValid(granter) or not granter:IsPlayer() then
 			if receiverOwner:GetInfoNum("warden_touch", 1) == 0 then return false end
 		end
 	end
 
-	local bypass = Warden._GetEntPermBypass(granter, perm)
-	if bypass ~= nil then
-		if bypass then return true end
-		if not validRec or not Warden.PlyBypassesFilters(receiverOwner) then return false end
+	local pOverride = hook.Run("WardenPreCheckPermission", receiver, granter, perm)
+	if pOverride ~= nil then return pOverride end
+
+	-- check if whitelist is on
+	local ret, noHook
+	if perm.ID ~= Warden.PERMISSION_ALL then
+		local wPerm = Warden.Permissions[Warden.PERMISSION_ALL]
+		if wPerm and checkPerm(receiver, granter, receiverOwner, granterOwner, validRec, validGra, wPerm) then
+			ret = true
+		end
 	end
 
-	if validRec and perm:GetAdminLevel() <= receiverOwner:WardenGetAdminLevel() then return true end
-
-	if not granterOwner then return perm:GetDefault() end
-
-	-- world
-
-	if (receiverOwner.IsWorld and receiverOwner:IsWorld()) or (granterOwner.IsWorld and granterOwner:IsWorld()) then
-		local wOverride = hook.Run("WardenCheckPermissionWorld", receiverOwner, granterOwner, perm)
-		if wOverride ~= nil then return wOverride end
-
-		return perm:GetWorldAccess()
+	if not ret then
+		ret, noHook = checkPerm(receiver, granter, receiverOwner, granterOwner, validRec, validGra, perm)
 	end
 
-	if not validRec or not IsValid(granterOwner) then return perm:GetDefault() end
-
-	-- both receiverOwner and granterOwner are confirmed players
-
-	local override = hook.Run("WardenCheckPermission", receiverOwner, granterOwner, perm)
-	if override ~= nil then return override end
-
-	if granterOwner:IsBot() and Warden.GetServerBool("always_target_bots", false) then
-		return true
+	if not noHook and validRec and validGra then
+		local override = hook.Run("WardenCheckPermission", receiverOwner, granterOwner, perm)
+		if override ~= nil then return override end
 	end
 
-	if receiverOwner == granterOwner then
-		return true
-	end
-
-	if perm.ID ~= Warden.PERMISSION_ALL and Warden.CheckPermission(receiverOwner, granterOwner, Warden.PERMISSION_ALL) then
-		return true
-	end
-
-	granterOwner:WardenEnsureSetup()
-
-	return Warden._GetPermStatus(receiverOwner, granterOwner, perm)
+	return ret
 end
 
 Warden.HasPermission = Warden.CheckPermission
+Warden.HasPerm = Warden.CheckPermission
 
 -- collapse a keyOrID value into just a key for permissions
 -- force: get the key even if it's disabled
