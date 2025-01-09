@@ -189,21 +189,23 @@ function PANEL:ShowPerms(w)
 		return
 	end
 
-	local plus = 0
 	local shift = (self.FontSize or 0) * 3
 	surface.SetDrawColor(255, 255, 255)
-	for k, v in pairs(Warden.GetAllPermissions(LocalPlayer(), self.Entity)) do
-		surface.SetMaterial(v:GetIcon())
-		surface.DrawTexturedRect(w - plus - 22, self.ItemY + shift, 16, 16)
-		plus = plus + 20
-	end
 
-	if plus == 0 then
-		return
+	local perms = Warden.GetAllPermissions(LocalPlayer(), self.Entity)
+	local c = table.Count(perms) * 20
+
+	if c == 0 then return end
+
+	local plus = c
+	for k, v in pairs(perms) do
+		surface.SetMaterial(v:GetIcon())
+		surface.DrawTexturedRect(w - plus - 2, self.ItemY + shift, 16, 16)
+		plus = plus - 20
 	end
 
 	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color></font>", self:GetFont(), Warden.L("perms:")))
-	self:DrawParsed(w - plus, parsed, plus)
+	self:DrawParsed(w - c, parsed, c)
 end
 
 function PANEL:SetEntColor()
