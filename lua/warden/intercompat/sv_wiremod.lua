@@ -19,7 +19,7 @@ function Warden.DisableChips(ply, errMsg)
 			v:Error(errMsg)
 			v:Destruct()
 		elseif v:GetClass() == "starfall_processor" then
-			v:Error(errMsg)
+			v:Destroy()
 		end
 	end
 end
