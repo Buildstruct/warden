@@ -1,3 +1,36 @@
+surface.CreateFont("WardenEntBig2", {
+	font = "Arial",
+	size = 35,
+})
+
+surface.CreateFont("WardenEnt2", {
+	font = "Arial",
+	italic = true,
+	size = 28,
+})
+
+surface.CreateFont("WardenEntBig1", {
+	font = "Arial",
+	size = 27,
+})
+
+surface.CreateFont("WardenEnt1", {
+	font = "Arial",
+	italic = true,
+	size = 22,
+})
+
+surface.CreateFont("WardenEntBig0", {
+	font = "Arial",
+	size = 20,
+})
+
+surface.CreateFont("WardenEnt0", {
+	font = "Arial",
+	italic = true,
+	size = 16,
+})
+
 local PANEL = {}
 
 function PANEL:NewPermCol(id, perm)

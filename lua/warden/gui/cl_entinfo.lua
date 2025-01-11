@@ -8,39 +8,6 @@ local showPerms = CreateClientConVar("warden_entinfo_show_perms", "1", true, fal
 local fontSize = CreateClientConVar("warden_entinfo_size", "-1", true, false, "Change the size of the entinfo ui (-1 = auto)", -1, 2)
 local doBlur = CreateClientConVar("warden_entinfo_blur", "1", true, false, "Whether to blur the background of the entinfo panel", 0, 1)
 
-surface.CreateFont("WardenEntBig2", {
-	font = "Arial",
-	size = 35,
-})
-
-surface.CreateFont("WardenEnt2", {
-	font = "Arial",
-	italic = true,
-	size = 28,
-})
-
-surface.CreateFont("WardenEntBig1", {
-	font = "Arial",
-	size = 27,
-})
-
-surface.CreateFont("WardenEnt1", {
-	font = "Arial",
-	italic = true,
-	size = 22,
-})
-
-surface.CreateFont("WardenEntBig0", {
-	font = "Arial",
-	size = 20,
-})
-
-surface.CreateFont("WardenEnt0", {
-	font = "Arial",
-	italic = true,
-	size = 16,
-})
-
 local PANEL = {}
 
 function PANEL:Init()
