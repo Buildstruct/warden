@@ -46,10 +46,10 @@ net.Receive("WardenInitialize", function(_, ply)
 	end
 
 	net.Start("WardenInitialize")
-	net.WriteUInt(#Warden.PlyPerms, Warden.PERM_PLY_NET_SIZE)
+	net.WriteUInt(table.Count(Warden.PlyPerms), Warden.PERM_PLY_NET_SIZE)
 	for steamID, perms in pairs(Warden.PlyPerms) do
 		net.WriteString(steamID)
-		net.WriteUInt(#perms, Warden.PERM_NET_SIZE)
+		net.WriteUInt(table.Count(perms), Warden.PERM_NET_SIZE)
 		for permID, steamIDs in pairs(perms) do
 			net.WriteUInt(permID, Warden.PERM_NET_SIZE)
 
