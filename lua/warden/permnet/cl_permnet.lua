@@ -7,11 +7,14 @@ if not permPersist:GetBool() then
 end
 sql.Query("CREATE TABLE IF NOT EXISTS warden_cl_perms ( steamID TEXT PRIMARY KEY ON CONFLICT REPLACE, perms TEXT );")
 
+Warden.PersistPerms = Warden.PersistPerms or {}
+
 -- Ask server for permission info and send persist perms
 hook.Add("InitPostEntity", "Warden", function()
 	local allPerms = Warden._GetAllPersistPerms()
 
 	net.Start("WardenInitialize")
+
 	net.WriteUInt(table.Count(allPerms), Warden.PERSIST_PERMS_NET_SIZE)
 	for k, v in pairs(allPerms) do
 		if k == "global" then
@@ -25,6 +28,7 @@ hook.Add("InitPostEntity", "Warden", function()
 			net.WriteUInt(k1, Warden.PERM_NET_SIZE)
 		end
 	end
+
 	net.SendToServer()
 end)
 
@@ -146,6 +150,11 @@ local function unparse(text)
 	return perms1
 end
 
+local function clearPerms(steamID)
+	Warden.PersistPerms[steamID] = nil
+	sql.Query(string.format("DELETE FROM warden_cl_perms WHERE steamID = %s;", sql.SQLStr(steamID)))
+end
+
 -- intended to be internal
 function Warden._SetPersistPerms(ply, perms)
 	local steamID = "global"
@@ -154,10 +163,11 @@ function Warden._SetPersistPerms(ply, perms)
 	end
 
 	if not perms or table.IsEmpty(perms) then
-		sql.Query(string.format("DELETE FROM warden_cl_perms WHERE steamID = %s;", sql.SQLStr(steamID)))
+		clearPerms(steamID)
 		return
 	end
 
+	Warden.PersistPerms[steamID] = perms
 	sql.Query(string.format("INSERT INTO warden_cl_perms ( steamID, perms ) VALUES ( %s, %s );", sql.SQLStr(steamID), parse(perms)))
 end
 
@@ -168,21 +178,32 @@ function Warden._GetPersistPerms(ply)
 		steamID = ply:SteamID()
 	end
 
-	local q = sql.QueryValue(string.format("SELECT perms FROM warden_cl_perms WHERE steamID = %s LIMIT 1;", sql.SQLStr(steamID)))
-	if not q then return {} end
+	if Warden.PersistPerms[steamID] then return Warden.PersistPerms[steamID] end
 
-	return unparse(q)
+	local q = sql.QueryValue(string.format("SELECT perms FROM warden_cl_perms WHERE steamID = %s LIMIT 1;", sql.SQLStr(steamID)))
+	if not q then
+		Warden.PersistPerms[steamID] = {}
+		return Warden.PersistPerms[steamID]
+	end
+
+	Warden.PersistPerms[steamID] = unparse(q)
+	return Warden.PersistPerms[steamID]
 end
 
 -- intended to be internal
 function Warden._GetAllPersistPerms()
 	local q = sql.Query("SELECT * FROM warden_cl_perms;")
-	if not q then return {} end
+	if not q then
+		Warden.PersistPerms = {}
+		return {}
+	end
 
 	local allPerms = {}
 	for _, v in pairs(q) do
 		allPerms[v.steamID] = unparse(v.perms)
 	end
+
+	Warden.PersistPerms = allPerms
 
 	return allPerms
 end
