@@ -1,3 +1,4 @@
+
 -- localize a string
 -- we autoconvert the key because gmod doesn't let us get the english
 -- and i would really like the default to be english

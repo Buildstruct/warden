@@ -26,16 +26,10 @@ end
 
 -- get the player entity from a steamid, does caching unlike gmod's version
 local steamIDMap = {}
-local reset
 function Warden.GetPlayerFromSteamID(steamID)
 	if steamID == "World" then return game.GetWorld() end
 
-	if not IsValid(steamIDMap[steamID]) and not reset then
-		reset = true
-		timer.Simple(0, function()
-			reset = nil
-		end)
-
+	if not IsValid(steamIDMap[steamID]) then
 		steamIDMap = {}
 		for _, ply in player.Iterator() do
 			steamIDMap[ply:SteamID()] = ply
