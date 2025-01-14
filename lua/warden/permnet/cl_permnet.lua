@@ -208,15 +208,9 @@ local function sendPly(steamID, entIndex)
 	net.WriteUInt(1, Warden.PERM_PLY_NET_SIZE)
 	net.WriteBool(false)
 	net.WriteUInt(entIndex, maxplayersBits)
-
-	local perms1 = perms[steamID]
-	if perms1 then
-		net.WriteUInt(table.Count(perms1), Warden.PERM_NET_SIZE)
-		for k, _ in pairs(perms1) do
-			net.WriteUInt(k, Warden.PERM_NET_SIZE)
-		end
-	else
-		net.WriteUInt(0, Warden.PERM_NET_SIZE)
+	net.WriteUInt(table.Count(perms), Warden.PERM_NET_SIZE)
+	for k, _ in pairs(perms) do
+		net.WriteUInt(k, Warden.PERM_NET_SIZE)
 	end
 
 	net.SendToServer()
@@ -236,13 +230,6 @@ gameevent.Listen("player_disconnect")
 hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
 	Warden.PlyPerms[data.networkid] = nil
 end)
-
---[[
-gameevent.Listen("player_connect_client")
-hook.Add("player_connect_client", "WardenPlayerConnect", function(data)
-	sendPly(data.networkid, data.index)
-end)
---]]
 
 cvars.AddChangeCallback("warden_perm_persist", function(_, _, newVal)
 	if newVal == "0" then
