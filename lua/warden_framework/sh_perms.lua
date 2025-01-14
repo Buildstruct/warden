@@ -240,11 +240,13 @@ function Warden.HasPermissionGlobal(ent, keyOrID)
 	if not perm then return false end
 	if not perm:GetEnabled() then return perm:GetDefault() end
 
-	local permList = Warden.PlyPerms[ply:SteamID()][perm.ID]
-
-	local state = permList and permList.global
+	local state = Warden.PlyPerms[ply:SteamID()][perm.ID].global
 	if state == nil then
-		state = perm:GetDefault()
+		if ply:GetInfoNum("warden_perm_persist", 0) == 0 then
+			state = perm:GetDefault()
+		else
+			state = false
+		end
 	end
 
 	return state
@@ -343,7 +345,11 @@ function Warden._GetPermStatus(receiver, granter, perm)
 
 	local global = permList.global
 	if global == nil then
-		global = perm:GetDefault()
+		if granter:GetInfoNum("warden_perm_persist", 0) == 0 then
+			global = perm:GetDefault()
+		else
+			global = false
+		end
 	end
 
 	local lcl = permList[receiver:SteamID()] or false

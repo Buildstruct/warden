@@ -24,7 +24,7 @@ function Warden.DisableChips(ply, errMsg)
 	end
 end
 
-hook.Add("PlayerDisconnected", "BS_HaltDisconnect", function(ply)
+hook.Add("PlayerDisconnected", "WardenHaltDisconnect", function(ply)
 	if not Warden.GetServerBool("freeze_disconnect", true) then return end
 
 	Warden.DisableChips(ply, "Owner disconnected")

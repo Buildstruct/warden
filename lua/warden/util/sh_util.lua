@@ -3,9 +3,7 @@ Warden.Names = Warden.Names or {}
 local PLAYER = FindMetaTable("Player")
 
 function PLAYER:WardenEnsureSetup()
-	if not Warden.PlyPerms[self:SteamID()] then
-		Warden.SetupPlayer(self)
-	end
+	Warden.SetupPlayer(self)
 end
 
 function Warden.SetupPlayer(plyOrID)
@@ -13,9 +11,9 @@ function Warden.SetupPlayer(plyOrID)
 		plyOrID = plyOrID:SteamID()
 	end
 
-	Warden.PlyPerms[plyOrID] = {}
+	Warden.PlyPerms[plyOrID] = Warden.PlyPerms[plyOrID] or {}
 	for _, v in pairs(Warden.Permissions) do
-		Warden.PlyPerms[plyOrID][v.ID] = {}
+		Warden.PlyPerms[plyOrID][v.ID] = Warden.PlyPerms[plyOrID][v.ID] or {}
 	end
 end
 

@@ -1,5 +1,6 @@
 Warden.DefaultSettings = Warden.DefaultSettings or {}
 
+Warden.GLOBAL_ID = "18446744073709551614"
 Warden.WORLD_ID = "18446744073709551614"
 
 Warden.ADMIN_LEVEL_MIN = 0
@@ -8,6 +9,7 @@ Warden.ADMIN_LEVEL_MAX = 99
 
 Warden.PERM_NET_SIZE = 8
 Warden.PERM_PLY_NET_SIZE = 8
+Warden.PERM_SET_NET_SIZE = 8
 
 Warden.SETTINGS_NET_SIZE = 8
 Warden.SETTINGS_OPTION_NET_SIZE = 11
