@@ -40,7 +40,7 @@ end
 
 local function sendAll()
 	net.Start("WardenAdminSettingChange")
-	net.WriteUInt(table.Count(Warden.Settings), 8)
+	net.WriteUInt(table.Count(Warden.Settings), Warden.SETTINGS_NET_SIZE)
 	for k, v in pairs(Warden.Settings) do
 		net.WriteString(k)
 		net.WriteInt(v, Warden.SETTINGS_OPTION_NET_SIZE)

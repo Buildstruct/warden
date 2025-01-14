@@ -44,7 +44,6 @@ end)
 gameevent.Listen("player_disconnect")
 hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
 	local steamID = data.networkid
-	Warden.PlyPerms[steamID] = nil
 
 	if Warden.GetServerBool("freeze_disconnect", true) then
 		Warden.FreezeEntities(steamID)
