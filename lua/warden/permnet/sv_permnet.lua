@@ -179,7 +179,6 @@ net.Receive("WardenPersistPerms", function(_, ply)
 
 	local plyID = ply:SteamID()
 	local plyUserID = ply:UserID()
-
 	local didChanges
 
 	local recC = net.ReadUInt(Warden.PERM_PLY_NET_SIZE)
