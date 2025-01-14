@@ -116,8 +116,19 @@ function Warden._GetPersistPerms(recID)
 end
 
 -- intended to be internal
+-- get persist perms for everyone on the server + global perms
 function Warden._GetAllPersistPerms()
-	local q = sql.Query("SELECT * FROM warden_cl_perms;")
+	local plys = player.GetHumans()
+	local recIDs = {}
+	for _, v in ipairs(plys) do
+		if v == LocalPlayer() then continue end
+
+		table.insert(recIDs, v:SteamID())
+	end
+
+	local str = table.concat(recIDs, ", ") .. ", global"
+
+	local q = sql.Query(string.format("SELECT * FROM warden_cl_perms WHERE steamID IN ( %s );", sql.SQLStr(str)))
 	if not q then return {} end
 
 	local allPerms = {}
@@ -235,7 +246,7 @@ cvars.AddChangeCallback("warden_perm_persist", function(_, _, newVal)
 	if newVal == "0" then
 		local perms = Warden._GetPersistPerms("global")
 
-		for k, _ in pairs(Warden.Permissions) do
+		for k, _ in pairs(Warden.GetAllPermissions()) do
 			Warden.PermissionRequest("global", perms[k], k)
 		end
 
@@ -246,7 +257,7 @@ cvars.AddChangeCallback("warden_perm_persist", function(_, _, newVal)
 	local perms = Warden.PlyPerms[LocalPlayer():SteamID()]
 	local newPerms = {}
 
-	for k, v in pairs(Warden.Permissions) do
+	for k, v in pairs(Warden.GetAllPermissions()) do
 		local enabled = perms[k]["global"]
 
 		if enabled == nil then
@@ -256,6 +267,12 @@ cvars.AddChangeCallback("warden_perm_persist", function(_, _, newVal)
 		end
 
 		Warden.PermissionRequest("global", newPerms[k], k)
+	end
+
+	for k, v in pairs(perms) do
+		if newPerms[k] == nil then
+			newPerms[k] = v
+		end
 	end
 
 	Warden._SetPersistPerms(nil, newPerms)
