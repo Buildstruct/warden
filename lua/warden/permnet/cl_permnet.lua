@@ -21,7 +21,7 @@ local function netReceiver(receiver)
 	return recID
 end
 
-local function sendPerm(receiver, keyOrID, granting)
+local function sendPerm(receiver, keyOrID, granting, dontDB)
 	local permID = Warden.PermID(keyOrID)
 	if not permID then return end
 
@@ -31,37 +31,36 @@ local function sendPerm(receiver, keyOrID, granting)
 	net.WriteBool(granting or false)
 	net.SendToServer()
 
+	if dontDB then return end
+
 	Warden._UpdatePersistPerm(recID, permID, granting)
 end
 
 -- set that one player allows another for a perm
 -- receiver can be nil
-function Warden.GrantPermission(receiver, keyOrID)
-	sendPerm(receiver, keyOrID, true)
+function Warden.GrantPermission(receiver, keyOrID, dontDB)
+	sendPerm(receiver, keyOrID, true, dontDB)
 end
 
 -- opposite of above
-function Warden.RevokePermission(receiver, keyOrID)
-	sendPerm(receiver, keyOrID)
+function Warden.RevokePermission(receiver, keyOrID, dontDB)
+	sendPerm(receiver, keyOrID, nil, dontDB)
 end
 
 -- determine whether to grant or revoke based on a bool
-function Warden.PermissionRequest(receiver, val, keyOrID)
+function Warden.PermissionRequest(receiver, val, keyOrID, dontDB)
 	if val then
-		Warden.GrantPermission(receiver, keyOrID)
+		Warden.GrantPermission(receiver, keyOrID, dontDB)
 	else
-		Warden.RevokePermission(receiver, keyOrID)
+		Warden.RevokePermission(receiver, keyOrID, dontDB)
 	end
 end
 
 local function parse(perms)
 	local perms1 = {}
 	for k, v in pairs(perms) do
-		if not v then continue end
-
-		local key = Warden.PermKey(k, true)
-		if key then
-			table.insert(perms1, key)
+		if v then
+			table.insert(perms1, k)
 		end
 	end
 
@@ -70,13 +69,10 @@ end
 
 local function unparse(text)
 	local perms = string.Explode(";", text)
-	local perms1 = {}
 
+	local perms1 = {}
 	for _, v in ipairs(perms) do
-		local id = Warden.PermID(v, true)
-		if id then
-			perms1[id] = true
-		end
+		perms1[v] = true
 	end
 
 	return perms1
@@ -85,11 +81,12 @@ end
 -- intended to be internal
 function Warden._UpdatePersistPerm(recID, permID, state)
 	local perms = Warden._GetPersistPerms(recID)
+	local permKey = Warden.PermKey(permID, true)
 
 	if state then
-		perms[permID] = true
+		perms[permKey] = true
 	else
-		perms[permID] = nil
+		perms[permKey] = nil
 	end
 
 	Warden._SetPersistPerms(recID, perms)
@@ -116,8 +113,19 @@ function Warden._GetPersistPerms(recID)
 end
 
 -- intended to be internal
+-- get persist perms for everyone on the server + global perms
 function Warden._GetAllPersistPerms()
-	local q = sql.Query("SELECT * FROM warden_cl_perms;")
+	local recIDs = {}
+	for _, v in ipairs(player.GetHumans()) do
+		if v == LocalPlayer() then continue end
+
+		table.insert(recIDs, v:SteamID())
+	end
+
+	table.insert(recIDs, "global")
+	local str = table.concat(recIDs, ", ")
+
+	local q = sql.Query(string.format("SELECT * FROM warden_cl_perms WHERE steamID IN ( %s );", sql.SQLStr(str)))
 	if not q then return {} end
 
 	local allPerms = {}
@@ -161,56 +169,32 @@ net.Receive("WardenUpdatePerms", function()
 	end
 end)
 
-local function sendAllPersists()
-	local perms = Warden._GetAllPersistPerms()
-	local humans = player.GetHumans()
+local function netPersists(ply, perms)
+	local recID = netReceiver(ply)
+	perms = perms or Warden._GetPersistPerms(recID)
 
-	net.Start("WardenPersistPerms")
-	net.WriteUInt(#humans + 1, Warden.PERM_PLY_NET_SIZE)
-
-	net.WriteBool(true)
-	local permsG = perms["global"]
-	if permsG then
-		net.WriteUInt(table.Count(permsG), Warden.PERM_NET_SIZE)
-		for k, _ in pairs(permsG) do
-			net.WriteUInt(k, Warden.PERM_NET_SIZE)
-		end
-	else
-		net.WriteUInt(0, Warden.PERM_NET_SIZE)
-	end
-
-	for _, receiver in ipairs(humans) do
-		netReceiver(receiver)
-
-		local recID = receiver:SteamID()
-		local perms1 = perms[recID]
-
-		if not perms1 then
-			net.WriteUInt(0, Warden.PERM_NET_SIZE)
-			continue
-		end
-
-		net.WriteUInt(table.Count(perms1), Warden.PERM_NET_SIZE)
-		for k, _ in pairs(perms1) do
-			net.WriteUInt(k, Warden.PERM_NET_SIZE)
+	local perms1 = {}
+	for k, _ in pairs(perms) do
+		local permID = Warden.PermID(k, true)
+		if permID then
+			table.insert(perms1, permID)
 		end
 	end
-	net.SendToServer()
+
+	net.WriteUInt(#perms1, Warden.PERM_NET_SIZE)
+	for _, v in ipairs(perms1) do
+		net.WriteUInt(v, Warden.PERM_NET_SIZE)
+	end
 end
 
-local maxplayersBits = math.ceil(math.log(1 + game.MaxPlayers()) / math.log(2))
-
-local function sendPly(steamID, entIndex)
-	local perms = Warden._GetPersistPerms(steamID)
-	if table.IsEmpty(perms) then return end
+local function sendAllPersists()
+	local allPerms = Warden._GetAllPersistPerms()
 
 	net.Start("WardenPersistPerms")
-	net.WriteUInt(1, Warden.PERM_PLY_NET_SIZE)
-	net.WriteBool(false)
-	net.WriteUInt(entIndex, maxplayersBits)
-	net.WriteUInt(table.Count(perms), Warden.PERM_NET_SIZE)
-	for k, _ in pairs(perms) do
-		net.WriteUInt(k, Warden.PERM_NET_SIZE)
+	net.WriteUInt(table.Count(allPerms), Warden.PERM_PLY_NET_SIZE)
+
+	for k, v in pairs(allPerms) do
+		netPersists(Warden.GetPlayerFromSteamID(k), v)
 	end
 
 	net.SendToServer()
@@ -218,9 +202,12 @@ end
 
 hook.Add("InitPostEntity", "WardenPerms", function()
 	hook.Add("OnEntityCreated", "WardenPerms", function(ent)
-		if ent:IsPlayer() then
-			sendPly(ent:SteamID(), ent:EntIndex())
-		end
+		if not ent:IsPlayer() then return end
+
+		net.Start("WardenPersistPerms")
+		net.WriteUInt(1, Warden.PERM_PLY_NET_SIZE)
+		netPersists(ent)
+		net.SendToServer()
 	end)
 
 	sendAllPersists()
@@ -235,8 +222,11 @@ cvars.AddChangeCallback("warden_perm_persist", function(_, _, newVal)
 	if newVal == "0" then
 		local perms = Warden._GetPersistPerms("global")
 
-		for k, _ in pairs(Warden.Permissions) do
-			Warden.PermissionRequest("global", perms[k], k)
+		for k, _ in pairs(Warden.GetAllPermissions()) do
+			local key = Warden.PermKey(k, true)
+			if key then
+				Warden.PermissionRequest("global", perms[key], k, true)
+			end
 		end
 
 		return
@@ -246,17 +236,28 @@ cvars.AddChangeCallback("warden_perm_persist", function(_, _, newVal)
 	local perms = Warden.PlyPerms[LocalPlayer():SteamID()]
 	local newPerms = {}
 
-	for k, v in pairs(Warden.Permissions) do
+	for k, v in pairs(Warden.GetAllPermissions()) do
+		local key = Warden.PermKey(k, true)
+		if not key then continue end
+
 		local enabled = perms[k]["global"]
 
 		if enabled == nil then
-			newPerms[k] = v:GetDefault()
+			newPerms[key] = v:GetDefault()
 		else
-			newPerms[k] = enabled
+			newPerms[key] = enabled
 		end
 
-		Warden.PermissionRequest("global", newPerms[k], k)
+		Warden.PermissionRequest("global", newPerms[key], k, true)
 	end
 
-	Warden._SetPersistPerms(nil, newPerms)
+	local oldPerms = Warden._GetPersistPerms("global")
+
+	for k, v in pairs(oldPerms) do
+		if newPerms[k] == nil then
+			newPerms[k] = v
+		end
+	end
+
+	Warden._SetPersistPerms("global", newPerms)
 end, "MakeDefaultsExplicit")

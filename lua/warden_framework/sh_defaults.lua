@@ -2,6 +2,7 @@ Warden.DefaultSettings = Warden.DefaultSettings or {}
 
 Warden.GLOBAL_ID = "18446744073709551614"
 Warden.WORLD_ID = "18446744073709551614"
+Warden.INVALID_PERM_ID = 255
 
 Warden.ADMIN_LEVEL_MIN = 0
 Warden.ADMIN_LEVEL_MIN_1 = 1
