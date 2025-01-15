@@ -120,7 +120,8 @@ function Warden._GetAllPersistPerms()
 		table.insert(recIDs, v:SteamID())
 	end
 
-	local str = table.concat(recIDs, ", ") .. ", global"
+	table.insert(recIDs, "global")
+	local str = table.concat(recIDs, ", ")
 
 	local q = sql.Query(string.format("SELECT * FROM warden_cl_perms WHERE steamID IN ( %s );", sql.SQLStr(str)))
 	if not q then return {} end
@@ -167,14 +168,14 @@ net.Receive("WardenUpdatePerms", function()
 end)
 
 local function netPersists(ply, perms)
-	perms = perms or Warden._GetPersistPerms(ply:SteamID())
+	local recID = netReceiver(ply)
+	perms = perms or Warden._GetPersistPerms(recID)
 
 	local perms1 = {}
 	for k, _ in pairs(perms) do
 		table.insert(perms1, Warden.PermID(k, true))
 	end
 
-	netReceiver(ply)
 	net.WriteUInt(#perms1, Warden.PERM_NET_SIZE)
 	for _, v in ipairs(perms1) do
 		net.WriteUInt(v, Warden.PERM_NET_SIZE)
@@ -185,7 +186,7 @@ local function sendAllPersists()
 	local allPerms = Warden._GetAllPersistPerms()
 
 	net.Start("WardenPersistPerms")
-	net.WriteUInt(#allPerms, Warden.PERM_PLY_NET_SIZE)
+	net.WriteUInt(table.Count(allPerms), Warden.PERM_PLY_NET_SIZE)
 
 	for k, v in pairs(allPerms) do
 		netPersists(Warden.GetPlayerFromSteamID(k), v)
