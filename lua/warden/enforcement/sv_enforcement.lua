@@ -12,14 +12,19 @@ end)
 
 hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
 	local attacker = dmg:GetAttacker()
+	local validAtt = IsValid(attacker)
 
 	-- fix fire damage
-	if IsValid(attacker) and attacker:GetClass() == "entityflame" and Warden.IsValid(attacker:GetParent()) then
+	if validAtt and attacker:GetClass() == "entityflame" and Warden.IsValid(attacker:GetParent()) then
 		local newAttacker = attacker:GetParent():CPPIGetOwner()
 		if Warden.IsValid(newAttacker) then
 			attacker = newAttacker
 			dmg:SetAttacker(attacker)
 		end
+	end
+
+	if Warden.GetServerBool("block_phy_damage", true) and dmg:IsDamageType(DMG_CRUSH) then
+		return true
 	end
 
 	if Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then return end

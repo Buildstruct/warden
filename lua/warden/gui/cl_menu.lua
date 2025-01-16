@@ -262,6 +262,7 @@ local function serverSettings(panel)
 
 	Warden.SetUpCheck(panel, "Players can always affect bots", "always_target_bots")
 	Warden.SetUpCheck(panel, "Allow gravgun punting", "gravgun_punt")
+	Warden.SetUpCheck(panel, "Block physics damage", "block_phy_damage")
 
 	hook.Run("WardenSettingsPlayers", panel)
 
