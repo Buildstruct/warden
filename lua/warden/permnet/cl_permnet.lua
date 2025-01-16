@@ -119,13 +119,13 @@ function Warden._GetAllPersistPerms()
 	for _, v in ipairs(player.GetHumans()) do
 		if v == LocalPlayer() then continue end
 
-		table.insert(recIDs, v:SteamID())
+		table.insert(recIDs, sql.SQLStr(v:SteamID()))
 	end
 
-	table.insert(recIDs, "global")
+	table.insert(recIDs, sql.SQLStr("global"))
 	local str = table.concat(recIDs, ", ")
 
-	local q = sql.Query(string.format("SELECT * FROM warden_cl_perms WHERE steamID IN ( %s );", sql.SQLStr(str)))
+	local q = sql.Query(string.format("SELECT * FROM warden_cl_perms WHERE steamID IN ( %s );", str))
 	if not q then return {} end
 
 	local allPerms = {}
