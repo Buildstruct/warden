@@ -11,8 +11,18 @@ hook.Add("PlayerUse", "Warden", function(ply, ent)
 end)
 
 hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
+	if Warden.GetServerBool("block_phy_damage", false) and dmg:IsDamageType(DMG_CRUSH) then return true end
+
 	local attacker = dmg:GetAttacker()
 	local validAtt = IsValid(attacker)
+
+	-- sometimes physics damage is attributed to world when it really should not be
+	if not validAtt and dmg:IsDamageType(DMG_CRUSH) then
+		local perm = Warden.GetPermission(Warden.PERMISSION_DAMAGE, true)
+		if perm and (perm:GetEnabled() or not perm:GetDefault()) then
+			return true
+		end
+	end
 
 	-- fix fire damage
 	if validAtt and attacker:GetClass() == "entityflame" and Warden.IsValid(attacker:GetParent()) then
@@ -21,10 +31,6 @@ hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
 			attacker = newAttacker
 			dmg:SetAttacker(attacker)
 		end
-	end
-
-	if Warden.GetServerBool("block_phy_damage", true) and dmg:IsDamageType(DMG_CRUSH) then
-		return true
 	end
 
 	if Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then return end

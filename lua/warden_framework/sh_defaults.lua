@@ -62,7 +62,7 @@ Warden.SetDefaultServerSetting("always_target_bots", false)
 Warden.SetDefaultServerSetting("gravgun_punt", true)
 Warden.SetDefaultServerSetting("class_filter_bypass", false)
 Warden.SetDefaultServerSetting("model_filter_whitelist", false)
-Warden.SetDefaultServerSetting("block_phy_damage", true)
+Warden.SetDefaultServerSetting("block_phy_damage", false)
 
 Warden.SetDefaultServerSetting("freeze_disconnect", true)
 Warden.SetDefaultServerSetting("cleanup_disconnect", true)
