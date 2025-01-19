@@ -58,14 +58,18 @@ function Warden.GetDefaultServerSetting(setting)
 	return Warden.DefaultSettings[setting]
 end
 
-Warden.SetDefaultServerSetting("always_target_bots", false)
-Warden.SetDefaultServerSetting("gravgun_punt", true)
 Warden.SetDefaultServerSetting("class_filter_bypass", false)
 Warden.SetDefaultServerSetting("model_filter_whitelist", false)
-Warden.SetDefaultServerSetting("block_phy_damage", false)
+
+Warden.SetDefaultServerSetting("perm_notify", true)
+Warden.SetDefaultServerSetting("always_target_bots", false)
+Warden.SetDefaultServerSetting("gravgun_punt", true)
+Warden.SetDefaultServerSetting("physgun_reload", true)
+Warden.SetDefaultServerSetting("phy_damage", true)
 
 Warden.SetDefaultServerSetting("freeze_disconnect", true)
 Warden.SetDefaultServerSetting("cleanup_disconnect", true)
+Warden.SetDefaultServerSetting("cleanup_notify", true)
 Warden.SetDefaultServerSetting("cleanup_time", 600)
 
 Warden.SetDefaultServerSetting("admin_level_needs_admin", true)

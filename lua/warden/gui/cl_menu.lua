@@ -262,7 +262,8 @@ local function serverSettings(panel)
 
 	Warden.SetUpCheck(panel, "Players can always affect bots", "always_target_bots")
 	Warden.SetUpCheck(panel, "Allow gravgun punting", "gravgun_punt")
-	Warden.SetUpCheck(panel, "Block physics damage", "block_phy_damage")
+	Warden.SetUpCheck(panel, "Allow physgun reload", "physgun_reload")
+	Warden.SetUpCheck(panel, "Allow physics damage", "phy_damage")
 
 	hook.Run("WardenSettingsPlayers", panel)
 
@@ -270,6 +271,7 @@ local function serverSettings(panel)
 
 	Warden.SetUpCheck(panel, "Freeze players' entities on disconnect", "freeze_disconnect")
 	Warden.SetUpCheck(panel, "Clean up players' entities on disconnect", "cleanup_disconnect")
+	Warden.SetUpCheck(panel, "Notify the server on cleanup", "cleanup_notify")
 
 	Warden.SetUpSlider(panel, "Clean up time", "cleanup_time", 0, 1000)
 

@@ -64,7 +64,7 @@ local adminStuffs = {
 		local name1 = net.ReadString()
 
 		notification.AddLegacy(Warden.L(msg, name, name1), NOTIFY_CLEANUP, 7)
-		surface.PlaySound("buttons/button14.wav")
+		surface.PlaySound("buttons/button22.wav")
 	end
 }
 

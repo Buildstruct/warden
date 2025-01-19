@@ -17,13 +17,19 @@ function PLAYER:WardenSetAdminLevel(level)
 	net.Send(self)
 end
 
-local function netNotif(msg, name, name1)
+-- send players a message with the legacy notification system
+function Warden.Notify(ply, msg, name, name1)
 	net.Start("WardenAdmin")
 	net.WriteUInt(Warden.ADMIN_NET.MESSAGE, Warden.ADMIN_NET_SIZE)
 	net.WriteString(msg)
 	net.WriteString(name or "")
 	net.WriteString(name1 or "")
-	net.Broadcast()
+
+	if ply then
+		net.Send(ply)
+	else
+		net.Broadcast()
+	end
 end
 
 local adminStuffs = {
@@ -39,7 +45,7 @@ local adminStuffs = {
 
 		Warden.CleanupDisconnected()
 
-		netNotif("%s cleaned up all disconnected players' props", ply:GetName())
+		Warden.Notify(nil, "%s cleaned up all disconnected players' props", ply:GetName())
 	end,
 	[Warden.ADMIN_NET.CLEAR_ENTS] = function(ply)
 		if not ply:IsAdmin() then return end
@@ -49,7 +55,7 @@ local adminStuffs = {
 
 		target:WardenCleanupEntities()
 
-		netNotif("%s cleaned up %s's props", ply:GetName(), target:GetName())
+		Warden.Notify(nil, "%s cleaned up %s's props", ply:GetName(), target:GetName())
 	end,
 	[Warden.ADMIN_NET.FREEZE_ENTS] = function(ply)
 		if not ply:IsAdmin() then return end
@@ -59,7 +65,7 @@ local adminStuffs = {
 
 		target:WardenFreezeEntities()
 
-		netNotif("%s froze %s's props", ply:GetName(), target:GetName())
+		Warden.Notify(nil, "%s froze %s's props", ply:GetName(), target:GetName())
 	end,
 	[Warden.ADMIN_NET.CLEAR_SETTINGS] = function(ply)
 		if not ply:IsSuperAdmin() then

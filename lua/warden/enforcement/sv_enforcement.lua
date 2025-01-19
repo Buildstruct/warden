@@ -11,7 +11,7 @@ hook.Add("PlayerUse", "Warden", function(ply, ent)
 end)
 
 hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
-	if Warden.GetServerBool("block_phy_damage", false) and dmg:IsDamageType(DMG_CRUSH) then return true end
+	if not Warden.GetServerBool("phy_damage", true) and dmg:IsDamageType(DMG_CRUSH) then return true end
 
 	local attacker = dmg:GetAttacker()
 	local validAtt = IsValid(attacker)
@@ -45,9 +45,9 @@ hook.Add("CanEditVariable", "Warden", function(ent, ply)
 end)
 
 hook.Add("OnPhysgunReload", "Warden", function(_, ply)
-	local ent = ply:GetEyeTrace().Entity
+	if not Warden.GetServerBool("physgun_reload", true) and not Warden.PlyBypassesFilters(ply) then return false end
 
-	if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_PHYSGUN) then
+	if not Warden.CheckPermission(ply, ply:GetEyeTrace().Entity, Warden.PERMISSION_PHYSGUN) then
 		return false
 	end
 end)
@@ -67,6 +67,10 @@ hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
 		timer.Create("WardenCleanup#" .. steamID, time, 1, function()
 			local count = Warden.CleanupEntities(steamID)
 			hook.Run("WardenNaturalCleanup", name, time, steamID, count)
+
+			if Warden.GetServerBool("cleanup_notify", true) then
+				Warden.Notify(nil, "%s's props were cleaned up automatically", name)
+			end
 		end)
 	end
 end)
