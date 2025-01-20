@@ -11,6 +11,7 @@ hook.Add("PlayerUse", "Warden", function(ply, ent)
 end)
 
 hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
+	if not IsValid(ent) then return end
 	if not Warden.GetServerBool("phy_damage", true) and dmg:IsDamageType(DMG_CRUSH) then return true end
 
 	local attacker = dmg:GetAttacker()
@@ -26,7 +27,7 @@ hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
 
 	-- fix fire damage
 	if validAtt and attacker:GetClass() == "entityflame" and Warden.IsValid(attacker:GetParent()) then
-		local newAttacker = attacker:GetParent():CPPIGetOwner()
+		local newAttacker = Warden.GetOwner(attacker:GetParent())
 		if Warden.IsValid(newAttacker) then
 			attacker = newAttacker
 			dmg:SetAttacker(attacker)
@@ -34,7 +35,11 @@ hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
 	end
 
 	if Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then return end
-	if Warden.CheckPermission(dmg:GetInflictor(), ent, Warden.PERMISSION_DAMAGE) then return end
+
+	local inflictor = dmg:GetInflictor()
+	local infOwnerID = Warden.GetOwnerID(inflictor)
+	if infOwnerID and infOwnerID ~= "World" and Warden.CheckPermission(inflictor, ent, Warden.PERMISSION_DAMAGE) then return end
+
 	return true
 end)
 
