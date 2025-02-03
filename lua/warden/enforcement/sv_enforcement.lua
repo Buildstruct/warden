@@ -73,7 +73,7 @@ hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
 			local count = Warden.CleanupEntities(steamID)
 			hook.Run("WardenNaturalCleanup", name, time, steamID, count)
 
-			if Warden.GetServerBool("cleanup_notify", true) then
+			if Warden.GetServerBool("cleanup_notify", true) and count > 0 then
 				Warden.Notify(nil, "%s's props were cleaned up automatically", name)
 			end
 		end)
