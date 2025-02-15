@@ -10,5 +10,7 @@ hook.Add("PostGamemodeLoaded", "WardenACFCompat", function()
 		return Warden.CheckPermission(dmgInfo:GetAttacker(), ent, Warden.PERMISSION_DAMAGE)
 	end
 
+	hook.Add("ACF_PreDamageEntity", "ACF_DamagePermissionCore", ACF.Permissions.CanDamage)
+
 	SetGlobalBool("WardenACF", true)
 end)
