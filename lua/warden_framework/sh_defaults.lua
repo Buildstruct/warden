@@ -8,7 +8,7 @@ Warden.ADMIN_LEVEL_MIN = 0
 Warden.ADMIN_LEVEL_MIN_1 = 1
 Warden.ADMIN_LEVEL_MAX = 99
 
-Warden.PERM_NET_SIZE = 8
+Warden.PERM_NET_SIZE = 4
 Warden.PERM_PLY_NET_SIZE = 8
 Warden.PERM_SET_NET_SIZE = 8
 
