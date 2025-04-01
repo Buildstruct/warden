@@ -38,7 +38,7 @@ hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
 
 	local inflictor = dmg:GetInflictor()
 	local infOwnerID = Warden.GetOwnerID(inflictor)
-	if infOwnerID and infOwnerID ~= "World" and Warden.CheckPermission(inflictor, ent, Warden.PERMISSION_DAMAGE) then return end
+	if not validAtt and infOwnerID and infOwnerID ~= "World" and Warden.CheckPermission(inflictor, ent, Warden.PERMISSION_DAMAGE) then return end
 
 	return true
 end)
