@@ -2,7 +2,7 @@ local PLAYER = FindMetaTable("Player")
 
 -- get what admin level a player has
 function PLAYER:WardenGetAdminLevel()
-	if Warden.GetServerBool("admin_level_needs_admin", true) and not self:IsAdmin() then
+	if Warden.GetServerBool("admin_level_needs_admin", true) and not self:WardenGetPerm("warden_admin_level") then
 		return 0
 	end
 

@@ -34,21 +34,21 @@ end
 
 local adminStuffs = {
 	[Warden.ADMIN_NET.ADMIN_LEVEL] = function(ply)
-		if not ply:IsAdmin() then return end
+		if not ply:WardenGetPerm("warden_admin_level") then return end
 
 		local al = net.ReadUInt(Warden.ADMIN_LEVEL_NET_SIZE)
 
 		ply:WardenSetAdminLevel(al)
 	end,
 	[Warden.ADMIN_NET.CLEAR_DISCONNECTED] = function(ply)
-		if not ply:IsAdmin() then return end
+		if not ply:WardenGetPerm("warden_cleanup_disconnected") then return end
 
 		Warden.CleanupDisconnected()
 
 		Warden.Notify(nil, "%s cleaned up all disconnected players' props", ply:GetName())
 	end,
 	[Warden.ADMIN_NET.CLEAR_ENTS] = function(ply)
-		if not ply:IsAdmin() then return end
+		if not ply:WardenGetPerm("warden_cleanup_entities") then return end
 
 		local target = net.ReadEntity()
 		if not target:IsValid() or not target:IsPlayer() then return end
@@ -58,7 +58,7 @@ local adminStuffs = {
 		Warden.Notify(nil, "%s cleaned up %s's props", ply:GetName(), target:GetName())
 	end,
 	[Warden.ADMIN_NET.FREEZE_ENTS] = function(ply)
-		if not ply:IsAdmin() then return end
+		if not ply:WardenGetPerm("warden_freeze_entities") then return end
 
 		local target = net.ReadEntity()
 		if not target:IsValid() or not target:IsPlayer() then return end

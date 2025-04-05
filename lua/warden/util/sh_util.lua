@@ -6,6 +6,23 @@ function PLAYER:WardenEnsureSetup()
 	Warden.SetupPlayer(self)
 end
 
+local camiCache = {}
+function PLAYER:WardenGetPerm(permission)
+	if self:IsAdmin() then return true end
+	if not CAMI then return false end
+	if ULib and not ULib.ucl.authed[self:UniqueID()] then return false end
+
+	camiCache[permission] = camiCache[permission] or {}
+
+	CAMI.PlayerHasAccess(self, permission, function(hasAccess)
+		if IsValid(self) then
+			camiCache[permission][self:SteamID()] = hasAccess
+		end
+	end)
+
+	return camiCache[permission][self:SteamID()]
+end
+
 function Warden.SetupPlayer(plyOrID)
 	if not isstring(plyOrID) then
 		plyOrID = plyOrID:SteamID()
