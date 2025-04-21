@@ -75,3 +75,64 @@ Warden.SetDefaultServerSetting("cleanup_time", 600)
 Warden.SetDefaultServerSetting("admin_level_needs_admin", true)
 Warden.SetDefaultServerSetting("default_admin_level", 0)
 Warden.SetDefaultServerSetting("admin_level_filter_bypass", 4)
+
+local function onCami()
+	local cmdType = GetGlobalString("WardenCommands")
+	if not CAMI and cmdType == "" then return end
+
+	local cmdFuncs = {
+		sam = function(perm, altPerm)
+			Warden.AddCustomCmdPermCallback(perm, function(ply)
+				return ply:HasPermission(altPerm) or false
+			end)
+		end,
+		ulx = function(perm, altPerm)
+			Warden.AddCustomCmdPermCallback(perm, function(ply)
+				return ULib.ucl.query(ply, altPerm) or false
+			end)
+		end,
+		nadmin = function(perm, altPerm)
+			Warden.AddCustomCmdPermCallback(perm, function(ply)
+				return ply:HasPerm(altPerm) or false
+			end)
+		end
+	}
+
+	local perms = {
+		warden_cleanup_entities = {
+			sam = "cleanup",
+			ulx = "ulx cleanup",
+			nadmin = "cleanup"
+		},
+		warden_freeze_entities = {
+			sam = "pfreezeprops",
+			ulx = "ulx pfreezeprops",
+			nadmin = "pfreezeprops"
+		},
+		warden_cleanup_disconnected = {
+			sam = "cleanupdisconnected",
+			ulx = "ulx cupdis",
+			nadmin = "cupdis"
+		},
+		warden_admin_level = {
+			sam = "adminlevel",
+			ulx = "ulx adminlevel",
+			nadmin = "adminlevel"
+		}
+	}
+
+	for k, v in pairs(perms) do
+		if cmdFuncs[cmdType] and v[cmdType] then
+			cmdFuncs[cmdType](k, v[cmdType])
+		elseif CAMI then
+			local privilege = {
+				Name = k,
+				MinAccess = "admin"
+			}
+
+			CAMI.RegisterPrivilege(privilege)
+		end
+	end
+end
+
+timer.Simple(10, onCami)

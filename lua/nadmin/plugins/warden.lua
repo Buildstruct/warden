@@ -8,6 +8,8 @@ al.timeCreated = "Monday, December 30 2024"
 al.category = "Warden"
 al.call = "al"
 al.usage = "[level]"
+al.id = "warden_admin_level"
+al.forcedPriv = true
 al.server = function(ply, args)
     if table.IsEmpty(args) then
         ply:WardenSetAdminLevel(0)
@@ -26,6 +28,13 @@ al.server = function(ply, args)
     nadmin:Notify(ply, nadmin.colors.white, "Set your admin level to " .. num .. ".")
 end
 
+al.advUsage = {
+    {
+        text = "Admin level",
+        type = "number"
+    }
+}
+
 nadmin:RegisterCommand(al)
 
 local cupdis = {}
@@ -35,6 +44,8 @@ cupdis.author = "textstack"
 cupdis.timeCreated = "Saturday, January 4 2025"
 cupdis.category = "Warden"
 cupdis.call = "cupdis"
+cupdis.id = "warden_cleanup_disconnected"
+cupdis.forcedPriv = true
 cupdis.server = function(ply)
     Warden.CleanupDisconnected()
 
@@ -52,7 +63,9 @@ cup.author = "textstack"
 cup.timeCreated = "Saturday, January 4 2025"
 cup.category = "Warden"
 cup.call = "cleanup"
-cmd.usage = "<player>"
+cup.usage = "<player>"
+cup.id = "warden_cleanup_entities"
+cup.forcedPriv = true
 cup.server = function(ply, args)
     local targs = nadmin:FindPlayer(args[1], caller, nadmin.MODE_BELOW)
     if #targs > 0 then
@@ -71,6 +84,13 @@ cup.server = function(ply, args)
     end
 end
 
+cup.advUsage = {
+    {
+        type = "player",
+        text = "Player"
+    },
+}
+
 nadmin:RegisterCommand(cup)
 
 local pfz = {}
@@ -81,6 +101,8 @@ pfz.timeCreated = "Saturday, January 4 2025"
 pfz.category = "Warden"
 pfz.call = "pfreezeprops"
 pfz.usage = "<player>"
+pfz.id = "warden_freeze_entities"
+pfz.forcedPriv = true
 pfz.server = function(ply, args)
     local targs = nadmin:FindPlayer(args[1], caller, nadmin.MODE_BELOW)
     if #targs > 0 then
@@ -98,6 +120,13 @@ pfz.server = function(ply, args)
         nadmin:Notify(caller, nadmin.colors.red, nadmin.errors.noTargLess)
     end
 end
+
+pfz.advUsage = {
+    {
+        type = "player",
+        text = "Player"
+    },
+}
 
 nadmin:RegisterCommand(pfz)
 

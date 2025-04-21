@@ -202,19 +202,26 @@ function PANEL:OnRowRightClick(_, line)
 		SetClipboardText(line.Name)
 	end):SetIcon("icon16/page_copy.png")
 
-	if LocalPlayer():IsAdmin() then
+	local cleanupPerm = ply:WardenGetCmdPerm("warden_cleanup_entities")
+	local freezePerm = ply:WardenGetCmdPerm("warden_freeze_entities")
+
+	if cleanupPerm or freezePerm then
 		_menu:AddSpacer()
 
 		local submenu, option = _menu:AddSubMenu(Warden.L("Admin options..."))
 		option:SetIcon("icon16/user_gray.png")
 
-		submenu:AddOption(Warden.L("Freeze props"), function()
-			Warden.FreezeEntities(line.Ply)
-		end):SetIcon("icon16/anchor.png")
+		if freezePerm then
+			submenu:AddOption(Warden.L("Freeze props"), function()
+				Warden.FreezeEntities(line.Ply)
+			end):SetIcon("icon16/anchor.png")
+		end
 
-		submenu:AddOption(Warden.L("Clean up props"), function()
-			Warden.CleanupEntities(line.Ply)
-		end):SetIcon("icon16/cross.png")
+		if cleanupPerm then
+			submenu:AddOption(Warden.L("Clean up props"), function()
+				Warden.CleanupEntities(line.Ply)
+			end):SetIcon("icon16/cross.png")
+		end
 	end
 
 	_menu:Open()

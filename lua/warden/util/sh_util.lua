@@ -1,4 +1,5 @@
 Warden.Names = Warden.Names or {}
+Warden.CustomCmdPermCallbacks = Warden.CustomCmdPermCallbacks or {}
 
 local PLAYER = FindMetaTable("Player")
 
@@ -7,7 +8,11 @@ function PLAYER:WardenEnsureSetup()
 end
 
 local camiCache = {}
-function PLAYER:WardenGetPerm(permission)
+function PLAYER:WardenGetCmdPerm(permission)
+	if Warden.CustomCmdPermCallbacks[permission] then
+		return Warden.CustomCmdPermCallbacks[permission](self)
+	end
+
 	if self:IsAdmin() then return true end
 	if not CAMI then return false end
 	if ULib and not ULib.ucl.authed[self:UniqueID()] then return false end
@@ -20,7 +25,11 @@ function PLAYER:WardenGetPerm(permission)
 		end
 	end)
 
-	return camiCache[permission][self:SteamID()]
+	return camiCache[permission][self:SteamID()] or false
+end
+
+function Warden.AddCustomCmdPermCallback(permission, callback)
+	Warden.CustomCmdPermCallbacks[permission] = callback
 end
 
 function Warden.SetupPlayer(plyOrID)

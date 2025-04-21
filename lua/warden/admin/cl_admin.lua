@@ -1,5 +1,5 @@
 function Warden.RequestAdminLevel(adminLevel)
-	if not LocalPlayer():WardenGetPerm("warden_admin_level") then return end
+	if not LocalPlayer():WardenGetCmdPerm("warden_admin_level") then return end
 
 	net.Start("WardenAdmin")
 	net.WriteUInt(Warden.ADMIN_NET.ADMIN_LEVEL, Warden.ADMIN_NET_SIZE)
@@ -8,7 +8,7 @@ function Warden.RequestAdminLevel(adminLevel)
 end
 
 function Warden.CleanupDisconnected()
-	if not LocalPlayer():WardenGetPerm("warden_cleanup_disconnected") then return end
+	if not LocalPlayer():WardenGetCmdPerm("warden_cleanup_disconnected") then return end
 
 	net.Start("WardenAdmin")
 	net.WriteUInt(Warden.ADMIN_NET.CLEAR_DISCONNECTED, Warden.ADMIN_NET_SIZE)
@@ -16,7 +16,7 @@ function Warden.CleanupDisconnected()
 end
 
 function Warden.CleanupEntities(ply)
-	if not LocalPlayer():WardenGetPerm("warden_cleanup_entities") then return end
+	if not LocalPlayer():WardenGetCmdPerm("warden_cleanup_entities") then return end
 
 	net.Start("WardenAdmin")
 	net.WriteUInt(Warden.ADMIN_NET.CLEAR_ENTS, Warden.ADMIN_NET_SIZE)
@@ -25,7 +25,7 @@ function Warden.CleanupEntities(ply)
 end
 
 function Warden.FreezeEntities(ply)
-	if not LocalPlayer():WardenGetPerm("warden_freeze_entities") then return end
+	if not LocalPlayer():WardenGetCmdPerm("warden_freeze_entities") then return end
 
 	net.Start("WardenAdmin")
 	net.WriteUInt(Warden.ADMIN_NET.FREEZE_ENTS, Warden.ADMIN_NET_SIZE)

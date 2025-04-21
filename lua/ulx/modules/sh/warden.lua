@@ -35,4 +35,5 @@ pfz:addParam({ type = ULib.cmds.PlayersArg })
 pfz:defaultAccess(ULib.ACCESS_ADMIN)
 pfz:help("Freeze players' props.")
 
+if CLIENT then return end
 SetGlobalString("WardenCommands", "ulx")

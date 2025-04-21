@@ -19,29 +19,45 @@ local function setPerms(panel)
 	panel:ControlHelp(Warden.L("Right click to copy name/steamID"))
 
 	panel.Extra = {}
-	panel.Admin = -1
 
 	function panel.AdminExtra()
 		local hasCmds = GetGlobalString("WardenCommands") ~= ""
 
-		local help = panel:ControlHelp(Warden.L("Right click to cleanup/freeze props"))
-		table.insert(panel.Extra, help)
+		if panel.Admin.cleanup or panel.Admin.freeze then
+			local hint = "cleanup/freeze"
+			local cmdHint = "!cleanup/!pfreezeprops"
 
-		if hasCmds then
-			local help1 = panel:ControlHelp(Warden.L("(also try !cleanup/!pfreezeprops)"))
-			table.insert(panel.Extra, help1)
+			if not panel.Admin.cleanup then
+				hint = "freeze"
+				cmdHint = "!pfreezeprops"
+			elseif not panel.Admin.freeze then
+				hint = "cleanup"
+				cmdHint = "!cleanup"
+			end
+
+			local help = panel:ControlHelp(Warden.L("Right click to " .. hint .. " props"))
+			table.insert(panel.Extra, help)
+
+			if hasCmds then
+				local help1 = panel:ControlHelp(Warden.L("(also try " .. cmdHint .. ")"))
+				table.insert(panel.Extra, help1)
+			end
 		end
 
-		local cupdis = panel:Button(Warden.L("Clean up all disconnected players' props"))
-		table.insert(panel.Extra, cupdis)
-		function cupdis.DoClick()
-			Warden.CleanupDisconnected()
+		if panel.Admin.cupdis then
+			local cupdis = panel:Button(Warden.L("Clean up all disconnected players' props"))
+			table.insert(panel.Extra, cupdis)
+			function cupdis.DoClick()
+				Warden.CleanupDisconnected()
+			end
+
+			if hasCmds then
+				local helpCupdis = panel:ControlHelp(Warden.L("Can also be done with !cupdis"))
+				table.insert(panel.Extra, helpCupdis)
+			end
 		end
 
-		if hasCmds then
-			local helpCupdis = panel:ControlHelp(Warden.L("Can also be done with !cupdis"))
-			table.insert(panel.Extra, helpCupdis)
-		end
+		if not panel.Admin.al then return end
 
 		local al, al1 = panel:NumberWang(Warden.L("Admin level"), nil, Warden.ADMIN_LEVEL_MIN, Warden.ADMIN_LEVEL_MAX, 0)
 		panel.AL = al
@@ -68,13 +84,29 @@ local function setPerms(panel)
 	end
 
 	function panel.Refresh()
-		local admin = LocalPlayer():IsAdmin()
+		local admin = {
+			cleanup = LocalPlayer():WardenGetCmdPerm("warden_cleanup_entities"),
+			freeze = LocalPlayer():WardenGetCmdPerm("warden_freeze_entities"),
+			cupdis = LocalPlayer():WardenGetCmdPerm("warden_cleanup_disconnected"),
+			al = LocalPlayer():WardenGetCmdPerm("warden_admin_level")
+		}
 
-		if admin and IsValid(panel.AL) then
+		if admin.al and IsValid(panel.AL) then
 			panel.AL:SetText(LocalPlayer():WardenGetAdminLevel())
 		end
 
-		if admin == panel.Admin then return end
+		if panel.Admin then
+			local changed
+			for k, v in pairs(admin) do
+				if panel.Admin[k] ~= v then
+					changed = true
+					break
+				end
+			end
+
+			if not changed then return end
+		end
+
 		panel.Admin = admin
 
 		for _, v in ipairs(panel.Extra) do
@@ -84,10 +116,7 @@ local function setPerms(panel)
 		end
 
 		panel.Extra = {}
-
-		if admin then
-			panel.AdminExtra()
-		end
+		panel.AdminExtra()
 	end
 
 	setPermPnlExtra = panel
@@ -315,7 +344,7 @@ hook.Add("SpawnMenuOpened", "Warden", function()
 	end
 
 	if IsValid(setPermPnlExtra) then
-		setPermPnlExtra:Refresh()
+		setPermPnlExtra.Refresh()
 	end
 
 	for _, v in ipairs(checks) do
