@@ -114,10 +114,7 @@ function Warden._UpdateOwnerData(steamID, entID)
 	timer.Create("WardenSendOwnerData", 0, 1, updateOwnerData)
 end
 
-gameevent.Listen("player_activate")
-hook.Add("player_activate", "WardenSendName", function(data)
-	local ply = Player(data.userid)
-
+local function sendNick(ply)
 	Warden.Names[ply:SteamID()] = ply:Nick()
 
 	net.Start("WardenOwnership")
@@ -125,8 +122,23 @@ hook.Add("player_activate", "WardenSendName", function(data)
 	net.WriteUInt(Warden.OWNER_TYPE_NET.NEW_PLY, Warden.OWNER_TYPE_NET_SIZE)
 	net.WriteUInt64(util.SteamIDTo64(ply:SteamID()))
 	net.WriteString(ply:Nick())
+end
 
+gameevent.Listen("player_activate")
+hook.Add("player_activate", "WardenSendName", function(data)
+	local ply = Player(data.userid)
+
+	sendNick(ply)
 	net.SendOmit(ply)
+end)
+
+timer.Create("WardenFixNames", 30, 0, function()
+	for _, ply in player.Iterator() do
+		if Warden.Names[ply:SteamID()] == ply:Nick() then continue end
+
+		sendNick(ply)
+		net.Broadcast()
+	end
 end)
 
 net.Receive("WardenOwnership", function(_, ply)
