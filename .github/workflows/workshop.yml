@@ -1,0 +1,23 @@
+name: Deploy to Workshop
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@main
+        with:
+          submodules: "recursive"
+
+      - uses: vurv78/gmod-upload@v0.1.4
+        with:
+          id: 3405053516
+          changelog: ${{ github.event.head_commit.message }}
+        env:
+          STEAM_USERNAME: ${{ secrets.STEAM_USERNAME }}
+          STEAM_PASSWORD: ${{ secrets.STEAM_PASSWORD }}

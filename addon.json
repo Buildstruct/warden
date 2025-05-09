@@ -1,0 +1,17 @@
+{
+    "title" : "Warden (prop protection)",
+    "type" : "tool",
+    "tags" : [ "build" ],
+    "ignore": [
+        ".git/*",
+        ".github/*",
+        ".vscode/*",
+        "branding/*",
+        "*.md",
+        ".gitignore",
+        ".gitattributes",
+        ".gitmodules",
+        "node_modules",
+        "LICENSE"
+    ]
+}
