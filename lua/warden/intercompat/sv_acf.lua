@@ -7,7 +7,14 @@ hook.Add("PostGamemodeLoaded", "WardenACFCompat", function()
 			return oldCanDamage(ent, nil, dmgInfo)
 		end
 
-		return Warden.CheckPermission(dmgInfo:GetAttacker(), ent, Warden.PERMISSION_DAMAGE)
+		local owner = ent:WardenGetOwner()
+		if not owner.IsWorld or Owner:IsWorld() then return false end
+
+		local attacker = dmgInfo:GetAttacker()
+		if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then return false end
+		if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_GRAVGUN) then return false end
+
+		return true
 	end
 
 	hook.Add("ACF_PreDamageEntity", "ACF_DamagePermissionCore", ACF.Permissions.CanDamage)
