@@ -202,8 +202,8 @@ function PANEL:OnRowRightClick(_, line)
 		SetClipboardText(line.Name)
 	end):SetIcon("icon16/page_copy.png")
 
-	local cleanupPerm = line.Ply:WardenGetCmdPerm("warden_cleanup_entities")
-	local freezePerm = line.Ply:WardenGetCmdPerm("warden_freeze_entities")
+	local cleanupPerm = LocalPlayer():WardenGetCmdPerm("warden_cleanup_entities")
+	local freezePerm = LocalPlayer():WardenGetCmdPerm("warden_freeze_entities")
 
 	if cleanupPerm or freezePerm then
 		_menu:AddSpacer()
