@@ -8,7 +8,7 @@ hook.Add("PostGamemodeLoaded", "WardenACFCompat", function()
 		end
 
 		local owner = ent:WardenGetOwner()
-		if not owner.IsWorld or Owner:IsWorld() then return false end
+		if not owner.IsWorld or owner:IsWorld() then return false end
 
 		local attacker = dmgInfo:GetAttacker()
 		if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then return false end
