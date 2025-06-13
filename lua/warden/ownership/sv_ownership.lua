@@ -175,6 +175,11 @@ hook.Add("OnEntityCreated", "Warden", function(ent)
 	timer.Simple(0, function()
 		if not ent:IsValid() then return end
 
+		if ent:CreatedByMap() then
+			Warden.SetOwnerWorld(ent)
+			return
+		end
+
 		if ent:GetClass() == "gmod_wire_hologram" and ent.steamid then
 			Warden.SetOwner(ent, ent.steamid)
 			return
