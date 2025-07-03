@@ -21,7 +21,6 @@ hook.Add("PostGamemodeLoaded", "WardenACFCompat", function()
 	local doSquishyDamage = ACF.Damage.doSquishyDamage
 
 	local function isForcedSquishy(ent)
-		if not IsValid(ent) then return false end
 		local owner = ent:WardenGetOwner()
 		return IsValid(owner) and owner:IsPlayer() and owner:GetInfoNum("warden_acf_squishy_damage", 1) ~= 0
 	end
@@ -36,20 +35,23 @@ hook.Add("PostGamemodeLoaded", "WardenACFCompat", function()
 
 	local oldCheck = ACF.Check
 	function ACF.Check(ent, forceUpdate)
-		if isForcedSquishy(ent) then
-			if ent.ACF_OnDamage and not ent.ACF_OldOnDamage then
-				ent.ACF_OldOnDamage = ent.ACF_OnDamage
-				ent.ACF_OnDamage = overrideOnDamage
-			end
-			-- tell ACF to treat this entity as squishy
-			return "Squishy"
-		else
-			if ent.ACF_OldOnDamage then
-				ent.ACF_OnDamage = ent.ACF_OldOnDamage
-				ent.ACF_OldOnDamage = nil
+		local value = oldCheck(ent, forceUpdate)
+		if value ~= false then
+			if isForcedSquishy(ent) then
+				if ent.ACF_OnDamage and not ent.ACF_OldOnDamage then
+					ent.ACF_OldOnDamage = ent.ACF_OnDamage
+					ent.ACF_OnDamage = overrideOnDamage
+				end
+				-- tell ACF to treat this entity as squishy
+				return "Squishy"
+			else
+				if ent.ACF_OldOnDamage then
+					ent.ACF_OnDamage = ent.ACF_OldOnDamage
+					ent.ACF_OldOnDamage = nil
+				end
 			end
 		end
-		return oldCheck(ent, forceUpdate)
+		return value
 	end
 
 	SetGlobalBool("WardenACF", true)
