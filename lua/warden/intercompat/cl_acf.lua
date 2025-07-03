@@ -1,3 +1,5 @@
+CreateClientConVar("warden_acf_squishy_damage", "1", true, true, "Whether ACF should treat your entities as squishy when inflicting damage", 0, 1)
+
 hook.Add("WardenSettingsExtra", "WardenACF", function(panel)
 	if not GetGlobalBool("WardenACF", false) then return end
 
