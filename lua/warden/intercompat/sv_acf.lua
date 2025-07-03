@@ -12,9 +12,8 @@ hook.Add("PostGamemodeLoaded", "WardenACFCompat", function()
 
 		local attacker = dmgInfo:GetAttacker()
 		if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then return false end
-		if not Warden.CheckPermission(attacker, ent, Warden.PERMISSION_GRAVGUN) then return false end
 
-		return true
+		return oldCanDamage(ent, nil, dmgInfo)
 	end
 
 	hook.Add("ACF_PreDamageEntity", "ACF_DamagePermissionCore", ACF.Permissions.CanDamage)
