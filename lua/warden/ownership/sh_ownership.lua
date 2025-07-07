@@ -118,7 +118,7 @@ function Warden.SetOwner(entOrID, plyOrID)
 	local steamID = Warden.PossibleSteamID(plyOrID)
 	if not steamID then
 		if type(plyOrID) == "number" or IsValid(plyOrID) then
-			Warden.ReplaceOwner(entOrID, plyOrID)
+			Warden.ReplaceOwner(plyOrID, entOrID)
 			return true
 		end
 
