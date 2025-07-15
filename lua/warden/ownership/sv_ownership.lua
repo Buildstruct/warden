@@ -151,7 +151,7 @@ timer.Create("WardenSendAllOwnerData", 120, 0, Warden._SendAllOwnerData)
 
 local PLAYER = FindMetaTable("Player")
 
-local function getInternalOwner(ent)
+local function setInitialOwner(ent)
 	local owner = ent:GetInternalVariable("m_hOwnerEntity") or NULL
 
 	if owner == NULL then
@@ -166,9 +166,11 @@ local function getInternalOwner(ent)
 		owner = ent:GetMoveParent() or NULL
 	end
 
-	if owner == NULL then return end
-
-	return owner
+	if owner == NULL then
+		Warden.SetOwnerWorld(ent)
+	else
+		Warden.SetOwner(ent, owner)
+	end
 end
 
 hook.Add("OnEntityCreated", "Warden", function(ent)
@@ -186,12 +188,7 @@ hook.Add("OnEntityCreated", "Warden", function(ent)
 		end
 
 		if not Warden.GetOwner(ent) then
-			local owner = getInternalOwner(ent)
-			if owner then
-				Warden.SetOwner(ent, owner)
-			else
-				Warden.SetOwnerWorld(ent)
-			end
+			setInitialOwner(ent)
 		end
 	end)
 end)
