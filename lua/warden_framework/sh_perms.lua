@@ -144,11 +144,11 @@ Warden.PERMISSION_DAMAGE  = Warden.RegisterPermissionSimple("damage", "damage", 
 -- force: get the id even if it's disabled
 function Warden.PermID(keyOrID, force)
 	local permID = keyOrID
-	if type(keyOrID) == "string" then
-		permID = Warden.PermissionIDs[keyOrID]
-	end
+	local _type = type(keyOrID)
 
-	if type(keyOrID) == "table" then
+	if _type == "string" then
+		permID = Warden.PermissionIDs[keyOrID]
+	elseif _type == "table" then
 		if not force and not keyOrID:GetEnabled() then return end
 		return keyOrID.ID
 	end
@@ -162,11 +162,6 @@ end
 -- get a permission object from the key or id
 -- force: get the permission even if it's disabled
 function Warden.GetPermission(keyOrID, force)
-	if type(keyOrID) == "table" then
-		if not force and not keyOrID:GetEnabled() then return end
-		return keyOrID
-	end
-
 	local permID = Warden.PermID(keyOrID, force)
 	return permID and Warden.Permissions[permID]
 end
@@ -178,11 +173,17 @@ hook.Add("WardenPreCheckPermission", "WardenWhitelist", function(receiver, grant
 	if Warden._CheckPerm(receiver, granter, Warden.Permissions[Warden.PERMISSION_ALL], receiverOwner, granterOwner, validRec, validGra) then return true end
 end)
 
+local pCache = {}
+local pAllCache = {}
+
 -- check if something has the permission to affect another thing
 -- keyOrID is the key or id of a permission
 function Warden.CheckPermission(receiver, granter, keyOrID)
 	local perm = Warden.GetPermission(keyOrID, true)
 	if not perm then return false end
+
+	local cID = string.format("%s%s%s", receiver or "$", granter or "$", perm.KEY or "$")
+	if pCache[cID] then return pCache[cID] end
 
 	local receiverOwner = Warden.GetOwner(receiver)
 	local granterOwner = Warden.GetOwner(granter)
@@ -193,16 +194,25 @@ function Warden.CheckPermission(receiver, granter, keyOrID)
 	-- check receiver's touch settings
 	if validRec and receiver == receiverOwner and receiver ~= granter and not perm:GetBypassTouch() then
 		if receiverOwner == granterOwner then
-			if receiverOwner:GetInfoNum("warden_touch_self", 1) == 0 then return false end
+			if receiverOwner:GetInfoNum("warden_touch_self", 1) == 0 then
+				pCache[cID] = false
+				return false
+			end
 		elseif not IsValid(granter) or not granter:IsPlayer() then
-			if receiverOwner:GetInfoNum("warden_touch", 1) == 0 then return false end
+			if receiverOwner:GetInfoNum("warden_touch", 1) == 0 then
+				pCache[cID] = false
+				return false
+			end
 		end
 	end
 
-	local override = hook.Run("WardenPreCheckPermission", receiver, granter, perm, receiverOwner, granterOwner, validRec, validGra)
-	if override ~= nil then return override end
+	local out = hook.Run("WardenPreCheckPermission", receiver, granter, perm, receiverOwner, granterOwner, validRec, validGra)
+	if out == nil then
+		out = Warden._CheckPerm(receiver, granter, perm, receiverOwner, granterOwner, validRec, validGra)
+	end
 
-	return Warden._CheckPerm(receiver, granter, perm, receiverOwner, granterOwner, validRec, validGra)
+	pCache[cID] = out
+	return out
 end
 
 Warden.HasPermission = Warden.CheckPermission
@@ -259,15 +269,10 @@ hook.Add("WardenGetAllPerms", "WardenWhitelist", function(receiver, granter)
 	end
 end)
 
-local pCache = {}
-local function cacheID(receiver, granter)
-	return string.format("%s%s", receiver or "$", granter or "$")
-end
-
 -- get every perm or every perm for a specific pair of ents
 function Warden.GetAllPermissions(receiver, granter)
-	local cID = cacheID(receiver, granter)
-	if pCache[cID] then return pCache[cID] end
+	local cID = string.format("%s%s", receiver or "$", granter or "$")
+	if pAllCache[cID] then return pAllCache[cID] end
 
 	if not receiver and not granter then
 		local perms = {}
@@ -277,13 +282,13 @@ function Warden.GetAllPermissions(receiver, granter)
 			end
 		end
 
-		pCache[cID] = perms
+		pAllCache[cID] = perms
 		return perms
 	end
 
 	local override = hook.Run("WardenGetAllPerms", receiver, granter)
 	if override ~= nil then
-		pCache[cID] = override
+		pAllCache[cID] = override
 		return override
 	end
 
@@ -295,24 +300,26 @@ function Warden.GetAllPermissions(receiver, granter)
 		end
 	end
 
-	pCache[cID] = perms
+	pAllCache[cID] = perms
 	return perms
 end
 
 timer.Create("WardenPCache", 0.5, 0, function()
 	pCache = {}
+	pAllCache = {}
 end)
 
 -- intended to be internal
 function Warden._CheckPerm(receiver, granter, perm, receiverOwner, granterOwner, validRec, validGra)
 	-- check if the granter ent is filtered
 	local bypass = Warden._GetEntPermBypass(granter, perm)
+	local adminLevel = receiverOwner:WardenGetAdminLevel()
 	if bypass ~= nil then
 		if bypass then return true end
-		if not validRec or not Warden.PlyBypassesFilters(receiverOwner) then return false end
+		if not validRec or Warden.GetServerSetting("admin_level_filter_bypass") > adminLevel then return false end
 	end
 
-	if validRec and perm:GetAdminLevel() <= receiverOwner:WardenGetAdminLevel() then return true end
+	if validRec and perm:GetAdminLevel() <= adminLevel then return true end
 	if validGra and granterOwner:IsBot() and Warden.GetServerBool("always_target_bots", false) then return true end
 
 	if not granterOwner or not receiverOwner then return perm:GetDefault() end
@@ -336,13 +343,18 @@ end
 -- get the permission status for two players
 -- intended to be internal, you probably want CheckPermission instead
 function Warden._GetPermStatus(receiver, granter, perm)
-	granter:WardenEnsureSetup()
+	local grantID = granter:SteamID()
+	Warden.PlyPerms[grantID] = Warden.PlyPerms[grantID] or {}
+	for _, v in pairs(Warden.Permissions) do
+		Warden.PlyPerms[grantID][v.ID] = Warden.PlyPerms[grantID][v.ID] or {}
+	end
 
 	if not perm:GetEnabled() then return perm:GetDefault() end
 
-	local permList = Warden.PlyPerms[granter:SteamID()][perm.ID]
+	local permList = Warden.PlyPerms[grantID][perm.ID]
 	if not permList then return false end
 
+	--ignore default settings if perm persist is on
 	local global = permList.global
 	if global == nil then
 		if granter:GetInfoNum("warden_perm_persist", 0) == 0 then

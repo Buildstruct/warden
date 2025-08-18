@@ -10,6 +10,20 @@ local doBlur = CreateClientConVar("warden_entinfo_blur", "1", true, false, "Whet
 
 local PANEL = {}
 
+local isHoldingCamera
+hook.Add("HUDPaint", "Warden_EntInfo", function()
+	isHoldingCamera = nil
+end)
+hook.Add("PostRender", "Warden_EntInfo", function()
+	isHoldingCamera = true
+end)
+
+local hideHud = not GetConVar("cl_drawhud"):GetBool()
+
+cvars.AddChangeCallback("cl_drawhud", function(_, _, val)
+	hideHud = val == "0"
+end, "WardenHideEntInfo")
+
 function PANEL:Init()
 	self:SetAlpha(0)
 
@@ -188,6 +202,8 @@ function PANEL:SetEntColor()
 end
 
 function PANEL:Paint(w, h)
+	if isHoldingCamera or hideHud then return end
+
 	self:Blur()
 	self:DetermineFontSize()
 
@@ -244,7 +260,7 @@ end
 
 vgui.Register("WardenEntityInfo", PANEL, "DPanel")
 
-local function tick()
+local function think()
 	if not IsValid(Warden.EntityInfo) then
 		return
 	end
@@ -269,37 +285,12 @@ end
 
 hook.Add("InitPostEntity", "WardenEntityInfo", function()
 	Warden.EntityInfo = vgui.Create("WardenEntityInfo")
-	hook.Add("Tick", "WardenEntityInfo", tick)
-end)
-
-local hideHud = not GetConVar("cl_drawhud"):GetBool()
-local cameraOut
-
-local function hideEntInf()
-	if not IsValid(Warden.EntityInfo) then
-		return
-	end
-
-	if hideHud or cameraOut then
-		Warden.EntityInfo:Hide()
-	else
-		Warden.EntityInfo:Show()
-	end
-end
-
-cvars.AddChangeCallback("cl_drawhud", function(_, _, val)
-	hideHud = val == "0"
-	hideEntInf()
-end, "WardenHideEntInfo")
-
-hook.Add("PlayerSwitchWeapon", "WardenHideEntInfo", function(_, _, newWeapon)
-	cameraOut = newWeapon:GetClass() == "gmod_camera"
-	hideEntInf()
+	hook.Add("Think", "WardenEntityInfo", think)
 end)
 
 -- hotload support
 if IsValid(Warden.EntityInfo) then
 	Warden.EntityInfo:Remove()
 	Warden.EntityInfo = vgui.Create("WardenEntityInfo")
-	hook.Add("Tick", "WardenEntityInfo", tick)
+	hook.Add("Think", "WardenEntityInfo", think)
 end
