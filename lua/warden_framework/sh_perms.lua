@@ -313,13 +313,12 @@ end)
 function Warden._CheckPerm(receiver, granter, perm, receiverOwner, granterOwner, validRec, validGra)
 	-- check if the granter ent is filtered
 	local bypass = Warden._GetEntPermBypass(granter, perm)
-	local adminLevel = receiverOwner:WardenGetAdminLevel()
 	if bypass ~= nil then
 		if bypass then return true end
-		if not validRec or Warden.GetServerSetting("admin_level_filter_bypass") > adminLevel then return false end
+		if not validRec or Warden.GetServerSetting("admin_level_filter_bypass") > receiverOwner:WardenGetAdminLevel() then return false end
 	end
 
-	if validRec and perm:GetAdminLevel() <= adminLevel then return true end
+	if validRec and perm:GetAdminLevel() <= receiverOwner:WardenGetAdminLevel() then return true end
 	if validGra and granterOwner:IsBot() and Warden.GetServerBool("always_target_bots", false) then return true end
 
 	if not granterOwner or not receiverOwner then return perm:GetDefault() end
