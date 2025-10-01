@@ -29,6 +29,8 @@ hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
 	if validAtt and attacker:GetClass() == "entityflame" and Warden.IsValid(attacker:GetParent()) then
 		local newAttacker = Warden.GetOwner(attacker:GetParent())
 		if Warden.IsValid(newAttacker) then
+			if newAttacker == ent and newAttacker:IsPlayer() and not Warden.GetServerBool("fire_damage", true) then return true end
+
 			attacker = newAttacker
 			dmg:SetAttacker(attacker)
 		end

@@ -295,6 +295,7 @@ local function serverSettings(panel)
 	Warden.SetUpCheck(panel, "Allow gravgun punting", "gravgun_punt")
 	Warden.SetUpCheck(panel, "Allow physgun reload", "physgun_reload")
 	Warden.SetUpCheck(panel, "Allow physics damage", "phy_damage")
+	Warden.SetUpCheck(panel, "Burning players take damage", "fire_damage")
 
 	hook.Run("WardenSettingsPlayers", panel)
 

@@ -66,6 +66,7 @@ Warden.SetDefaultServerSetting("always_target_bots", false)
 Warden.SetDefaultServerSetting("gravgun_punt", true)
 Warden.SetDefaultServerSetting("physgun_reload", true)
 Warden.SetDefaultServerSetting("phy_damage", true)
+Warden.SetDefaultServerSetting("fire_damage", true)
 
 Warden.SetDefaultServerSetting("freeze_disconnect", true)
 Warden.SetDefaultServerSetting("cleanup_disconnect", true)
