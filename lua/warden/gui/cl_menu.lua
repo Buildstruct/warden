@@ -5,15 +5,18 @@ end)
 local setPermPnl
 local setPermPnlExtra
 local checks = {}
+local permChecks = {}
 
 local function setPerms(panel)
+	permChecks = {}
+
 	panel:Help(Warden.L("Configure prop protection settings."))
 
 	panel:CheckBox(Warden.L("Let me touch others' entities"), "warden_touch")
 	panel:CheckBox(Warden.L("Let me touch my own entities"), "warden_touch_self")
 	panel:CheckBox(Warden.L("Save my perms across sessions"), "warden_perm_persist")
 
-	hook.Run("WardenPermsHeader", panel)
+	hook.Run("WardenPermsHeader", panel, permChecks)
 
 	setPermPnl = vgui.Create("WardenSetPerms")
 	panel:AddItem(setPermPnl)
@@ -122,6 +125,10 @@ local function setPerms(panel)
 	end
 
 	setPermPnlExtra = panel
+
+	for _, v in ipairs(permChecks) do
+		v()
+	end
 
 	panel.Refresh()
 end
@@ -297,7 +304,7 @@ local function serverSettings(panel)
 	Warden.SetUpCheck(panel, "Allow physics damage", "phy_damage")
 	Warden.SetUpCheck(panel, "Burning players take damage", "fire_damage")
 
-	hook.Run("WardenSettingsPlayers", panel)
+	hook.Run("WardenSettingsPlayers", panel, checks)
 
 	Warden.AddSpacer(panel)
 
@@ -314,7 +321,7 @@ local function serverSettings(panel)
 	Warden.SetUpWang(panel, "Default admin level", "default_admin_level", Warden.ADMIN_LEVEL_MIN, Warden.ADMIN_LEVEL_MAX)
 	Warden.SetUpWang(panel, "AL to bypass filters", "admin_level_filter_bypass", Warden.ADMIN_LEVEL_MIN_1, Warden.ADMIN_LEVEL_MAX)
 
-	hook.Run("WardenSettingsExtra", panel)
+	hook.Run("WardenSettingsExtra", panel, checks)
 
 	Warden.AddSpacer(panel)
 
@@ -351,6 +358,10 @@ hook.Add("SpawnMenuOpened", "Warden", function()
 	end
 
 	for _, v in ipairs(checks) do
+		v()
+	end
+
+	for _, v in ipairs(permChecks) do
 		v()
 	end
 end)

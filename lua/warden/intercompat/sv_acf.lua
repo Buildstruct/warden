@@ -25,7 +25,7 @@ hook.Add("PostGamemodeLoaded", "WardenACFCompat", function()
 		if not IsValid(owner) or not owner:IsPlayer() then return false end
 
 		local squishy = owner:GetInfoNum("warden_acf_squishy_damage", -1)
-		if squishy < 0 then return Warden.GetServerBool("acf_default_squishy_damage")
+		if squishy < 0 then return Warden.GetServerBool("acf_default_squishy_damage", true) end
 
 		return squishy ~= 0
 	end
