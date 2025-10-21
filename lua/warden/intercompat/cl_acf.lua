@@ -1,4 +1,4 @@
-CreateClientConVar("warden_acf_squishy_damage", "1", true, true, "Whether ACF should treat all your entities as squishy when inflicting damage", 0, 1)
+CreateClientConVar("warden_acf_squishy_damage_1", "0", true, true, "Whether ACF should treat all your entities as squishy when inflicting damage", 0, 1)
 
 hook.Add("WardenSettingsExtra", "WardenACF", function(panel)
 	if not GetGlobalBool("WardenACF", false) then return end
@@ -10,5 +10,5 @@ end)
 hook.Add("WardenPermsHeader", "WardenACF", function(panel)
 	if not GetGlobalBool("WardenACF", false) then return end
 
-	panel:CheckBox(Warden.L("Make my entities ACF-squishy"), "warden_acf_squishy_damage")
+	panel:CheckBox(Warden.L("Make my entities ACF-squishy"), "warden_acf_squishy_damage_1")
 end)

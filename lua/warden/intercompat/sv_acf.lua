@@ -22,7 +22,7 @@ hook.Add("PostGamemodeLoaded", "WardenACFCompat", function()
 
 	local function isForcedSquishy(ent)
 		local owner = ent:WardenGetOwner()
-		return IsValid(owner) and owner:IsPlayer() and owner:GetInfoNum("warden_acf_squishy_damage", 1) ~= 0
+		return IsValid(owner) and owner:IsPlayer() and owner:GetInfoNum("warden_acf_squishy_damage_1", 1) ~= 0
 	end
 
 	local function overrideOnDamage(self, ...)
