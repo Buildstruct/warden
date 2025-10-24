@@ -202,6 +202,7 @@ function PANEL:SetEntColor()
 end
 
 function PANEL:Paint(w, h)
+	if hook.Run("HUDShouldDraw", "WardenEntInfo") == false then return end
 	if isHoldingCamera or hideHud then return end
 
 	self:Blur()
