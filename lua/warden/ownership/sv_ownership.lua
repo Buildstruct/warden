@@ -149,6 +149,7 @@ timer.Create("WardenSendAllOwnerData", 120, 0, Warden._SendAllOwnerData)
 
 -- // ownership setting // --
 
+local ENTITY = FindMetaTable("Entity")
 local PLAYER = FindMetaTable("Player")
 
 local function setInitialOwner(ent)
@@ -202,6 +203,14 @@ hook.Add("PlayerInitialSpawn", "Warden", function(ply)
 end)
 
 -- Detours
+
+if ENTITY.SetOwner then
+	Warden.BackupEntSetOwner = Warden.BackupEntSetOwner or ENTITY.SetOwner
+	function ENTITY:SetOwner(ent)
+		Warden.SetOwner(ent, self)
+		Warden.BackupEntSetOwner(self, ent)
+	end
+end
 
 if PLAYER.AddCount then
 	Warden.BackupPlyAddCount = Warden.BackupPlyAddCount or PLAYER.AddCount
