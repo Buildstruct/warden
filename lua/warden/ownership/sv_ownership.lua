@@ -207,7 +207,7 @@ end)
 if ENTITY.SetOwner then
 	Warden.BackupEntSetOwner = Warden.BackupEntSetOwner or ENTITY.SetOwner
 	function ENTITY:SetOwner(ent)
-		Warden.SetOwner(ent, self)
+		Warden.SetOwner(self, ent)
 		Warden.BackupEntSetOwner(self, ent)
 	end
 end
