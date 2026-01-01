@@ -284,13 +284,21 @@ local function think()
 	Warden.EntityInfo:SetEntity(_trace.Entity)
 end
 
-hook.Add("InitPostEntity", "WardenEntityInfo", function()
+-- linux clients do not run InitPostEntity on servers
+local initHook = game.SinglePlayer() and "InitPostEntity" or "SetupMove"
+hook.Add(initHook, "WardenEntityInfo", function()
+	hook.Remove(initHook, "WardenEntityInfo")
+
+	if IsValid(Warden.EntityInfo) then
+		Warden.EntityInfo:Remove()
+	end
+
 	Warden.EntityInfo = vgui.Create("WardenEntityInfo")
 	hook.Add("Think", "WardenEntityInfo", think)
 end)
 
--- hotload support
-if IsValid(Warden.EntityInfo) then
+-- hotload support for singleplayer
+if game.SinglePlayer() and IsValid(Warden.EntityInfo) then
 	Warden.EntityInfo:Remove()
 	Warden.EntityInfo = vgui.Create("WardenEntityInfo")
 	hook.Add("Think", "WardenEntityInfo", think)

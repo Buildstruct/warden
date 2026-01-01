@@ -70,7 +70,10 @@ net.Receive("WardenOwnership", function()
 	readNet[net.ReadUInt(Warden.OWNER_TYPE_NET_SIZE)]()
 end)
 
-hook.Add("InitPostEntity", "WardenGetOwnerData", function()
+-- linux clients do not run InitPostEntity on servers
+local initHook = game.SinglePlayer() and "InitPostEntity" or "SetupMove"
+hook.Add(initHook, "WardenGetOwnerData", function()
+	hook.Remove(initHook, "WardenGetOwnerData")
 	timer.Simple(10, Warden._RequestAllOwnerData)
 	Warden._RequestAllOwnerData()
 end)
