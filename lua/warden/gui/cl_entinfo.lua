@@ -284,11 +284,7 @@ local function think()
 	Warden.EntityInfo:SetEntity(_trace.Entity)
 end
 
--- linux clients do not run InitPostEntity on servers
-local initHook = game.SinglePlayer() and "InitPostEntity" or "SetupMove"
-hook.Add(initHook, "WardenEntityInfo", function()
-	hook.Remove(initHook, "WardenEntityInfo")
-
+hook.Add("InitPostEntity", "WardenEntityInfo", function()
 	if IsValid(Warden.EntityInfo) then
 		Warden.EntityInfo:Remove()
 	end
