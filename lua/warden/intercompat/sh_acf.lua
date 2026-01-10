@@ -9,8 +9,20 @@ hook.Add("InitPostEntity", "WardenACF", function()
 
 	local oldCanDamage = ACF.Permissions.CanDamage
 	function ACF.Permissions.CanDamage(ent, _, dmgInfo)
-		if not oldCanDamage(ent, nil, dmgInfo) then return false end
-		return Warden.CheckPermission(dmgInfo:GetAttacker(), ent, Warden.PERMISSION_ACF)
+		local perm = Warden.GetPermission(Warden.PERMISSION_ACF, true)
+		if not perm then return oldCanDamage(ent, nil, dmgInfo) end
+		if not perm:GetEnabled() then
+			if not oldCanDamage(ent, nil, dmgInfo) then return false end
+			return perm:GetDefault()
+		end
+
+		local attacker = dmgInfo:GetAttacker()
+		if ACF.EnableSafezones and ACF.Permissions.Safezones then
+			if ACF.Permissions.IsInSafezone(ent:GetPos()) then return false end
+			if IsValid(attacker) and ACF.Permissions.IsInSafezone(attacker:GetPos()) then return false end
+		end
+
+		return Warden.CheckPermission(attacker, ent, Warden.PERMISSION_ACF)
 	end
 
 	hook.Add("ACF_PreDamageEntity", "ACF_DamagePermissionCore", ACF.Permissions.CanDamage)
