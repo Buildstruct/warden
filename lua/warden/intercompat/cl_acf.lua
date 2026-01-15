@@ -5,7 +5,6 @@ hook.Add("WardenSettingsExtra", "WardenACF", function(panel)
 
 	Warden.AddSpacer(panel)
 	Warden.SetUpCheck(panel, "ACF-squishy by default", "acf_default_squishy_damage")
-	--Warden.SetUpCheck(panel, "Override ACF's perms", "override_acf")
 end)
 
 hook.Add("WardenPermsHeader", "WardenACF", function(panel, checks)
