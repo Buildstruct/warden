@@ -5,7 +5,7 @@ hook.Add("WardenSettingsExtra", "WardenACF", function(panel)
 
 	Warden.AddSpacer(panel)
 	Warden.SetUpCheck(panel, "ACF-squishy by default", "acf_default_squishy_damage")
-	Warden.SetUpCheck(panel, "Override ACF's perms", "override_acf")
+	--Warden.SetUpCheck(panel, "Override ACF's perms", "override_acf")
 end)
 
 hook.Add("WardenPermsHeader", "WardenACF", function(panel, checks)
@@ -22,7 +22,7 @@ hook.Add("WardenPermsHeader", "WardenACF", function(panel, checks)
 
 		local val = cvarSquishy:GetInt()
 		if val < 0 then
-			val = Warden.GetServerBool("acf_default_squishy_damage", true)
+			val = Warden.GetServerBool("acf_default_squishy_damage", false)
 		else
 			val = val ~= 0
 		end

@@ -77,7 +77,7 @@ Warden.SetDefaultServerSetting("admin_level_needs_admin", true)
 Warden.SetDefaultServerSetting("default_admin_level", 0)
 Warden.SetDefaultServerSetting("admin_level_filter_bypass", 4)
 
-Warden.SetDefaultServerSetting("acf_default_squishy_damage", true)
+Warden.SetDefaultServerSetting("acf_default_squishy_damage", false)
 
 local function onCami()
 	local cmdType = GetGlobalString("WardenCommands")

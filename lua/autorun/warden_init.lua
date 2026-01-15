@@ -7,6 +7,7 @@ if SERVER then
 	resource.AddSingleFile("materials/warden/gravgun.png")
 	resource.AddSingleFile("materials/warden/use.png")
 	resource.AddSingleFile("materials/warden/damage.png")
+	resource.AddSingleFile("materials/warden/acf.png")
 end
 
 local function addFile(File, directory)
