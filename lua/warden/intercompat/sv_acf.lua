@@ -4,7 +4,7 @@ hook.Add("InitPostEntity", "WardenACF1", function()
 	local oldCanDamage = ACF.Permissions.CanDamage
 	function ACF.Permissions.CanDamage(ent, _, dmgInfo)
 		if Warden.GetPermission(Warden.PERMISSION_ACF) and Warden.CheckPermission(dmgInfo:GetAttacker(), ent, Warden.PERMISSION_ACF) then return end
-		if not oldCanDamage(ent, nil, dmgInfo) then return false end
+		if oldCanDamage(ent, nil, dmgInfo) == false then return false end
 		if not Warden.CheckPermission(dmgInfo:GetAttacker(), ent, Warden.PERMISSION_DAMAGE) then return false end
 	end
 
