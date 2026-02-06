@@ -18,7 +18,7 @@ hook.Add("GravGunPunt", "Warden", function(ply, ent)
 end)
 
 hook.Add("PhysgunPickup", "Warden", function(ply, ent)
-	if ent:IsPlayer() and not Warden.CheckPermission(ply, ent, Warden.PERMISSION_PHYSGUN) then
+	if not ent:IsPlayer() and not Warden.CheckPermission(ply, ent, Warden.PERMISSION_PHYSGUN) then
 		return false
 	end
 end)
