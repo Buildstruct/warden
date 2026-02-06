@@ -1,4 +1,4 @@
-hook.Add("CanTool", "Warden", function(ply, tr, tool)
+hook.Add("CanTool", "Warden", function(ply, tr)
 	local ent = tr.Entity
 	if ent:IsWorld() then return true end
 

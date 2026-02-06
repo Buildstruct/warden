@@ -82,7 +82,7 @@ hook.Add("player_disconnect", "WardenPlayerDisconnect", function(data)
 	end
 end)
 
-hook.Add("CanProperty", "Warden", function(ply, property, ent)
+hook.Add("CanProperty", "Warden", function(ply, _property, ent)
 	if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_TOOL) then
 		return false
 	end
