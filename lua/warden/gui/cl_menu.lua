@@ -144,6 +144,8 @@ local function entInfo(panel)
 	panel:CheckBox(Warden.L("Show class"), "warden_entinfo_show_class")
 	panel:CheckBox(Warden.L("Show model"), "warden_entinfo_show_model")
 	panel:CheckBox(Warden.L("Show material"), "warden_entinfo_show_material")
+	panel:CheckBox(Warden.L("Show mass"), "warden_entinfo_show_mass")
+	panel:CheckBox(Warden.L("Show collision group"), "warden_entinfo_show_cgroup")
 	panel:CheckBox(Warden.L("Show color"), "warden_entinfo_show_color")
 	panel:CheckBox(Warden.L("Show perms"), "warden_entinfo_show_perms")
 
