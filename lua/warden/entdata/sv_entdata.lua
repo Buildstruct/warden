@@ -2,7 +2,7 @@ util.AddNetworkString("WardenEntData")
 
 local trackedEnts = {}
 
-local function updateData(ent, pvs)
+local function updateData(ent)
 	local phys = ent:GetPhysicsObject()
 	if phys:IsValid() then
 		ent.Mass = phys:GetMass()
@@ -16,12 +16,7 @@ local function updateData(ent, pvs)
 	net.WriteEntity(ent)
 	net.WriteBool(ent.IsFrozen)
 	net.WriteFloat(ent.Mass)
-
-	if pvs then
-		net.SendPVS(ent:GetPos())
-	else
-		net.Broadcast()
-	end
+	net.SendPVS(ent:GetPos())
 end
 
 hook.Add("OnEntityCreated", "WardenEntData", function(ent)
@@ -67,13 +62,13 @@ hook.Add("KeyPress", "WardenEntData", function(ply, key)
 
 	timer.Create("WardenEntDataPing_" .. ent:EntIndex(), 0, 1, function()
 		if not ent:IsValid() then return end
-		updateData(ent, true)
+		updateData(ent)
 	end)
 end)
 
 hook.Add("PhysgunDrop", "WardenEntData", function(_, ent)
 	timer.Create("WardenEntDataPing_" .. ent:EntIndex(), 0, 1, function()
 		if not ent:IsValid() then return end
-		updateData(ent, true)
+		updateData(ent)
 	end)
 end)
