@@ -117,7 +117,7 @@ function PANEL:ShowClass(w)
 
 	local r, g, b = 255, 255, 255
 	local clientClass = self.Entity:GetClass()
-	local serverClass = self.Entity:GetNWString("ServerClass", clientClass)
+	local serverClass = self.Entity:GetNW2String("ServerClass", clientClass)
 	local class = clientClass
 
 	if clientClass ~= serverClass then

@@ -30,7 +30,7 @@ hook.Add("OnEntityCreated", "WardenEntData", function(ent)
 
 		trackedEnts[ent:EntIndex()] = ent
 		updateData(ent)
-		ent:SetNWString("ServerClass", ent:GetClass())
+		ent:SetNW2String("ServerClass", ent:GetClass())
 	end)
 end)
 
