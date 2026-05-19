@@ -1,0 +1,5 @@
+net.Receive("WardenEntData", function()
+    local ent = net.ReadEntity()
+    ent.IsFrozen = net.ReadBool()
+    ent.Mass = net.ReadFloat()
+end)

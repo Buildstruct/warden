@@ -3,8 +3,10 @@ local showOwner = CreateClientConVar("warden_entinfo_show_owner", "1", true, fal
 local showClass = CreateClientConVar("warden_entinfo_show_class", "0", true, false, "Show the entity class of the entity you're aiming at", 0, 1)
 local showModel = CreateClientConVar("warden_entinfo_show_model", "0", true, false, "Show the model path of the entity you're aiming at", 0, 1)
 local showMaterial = CreateClientConVar("warden_entinfo_show_material", "0", true, false, "Show the material path of the entity you're aiming at", 0, 1)
+local showMass = CreateClientConVar("warden_entinfo_show_mass", "0", true, false, "Show the mass of the entity you're aiming at.", 0, 1)
 local showColor = CreateClientConVar("warden_entinfo_show_color", "0", true, false, "Show the color of the entity you're aiming at", 0, 1)
 local showPerms = CreateClientConVar("warden_entinfo_show_perms", "1", true, false, "Show the permissions you have with the entity you're aiming at", 0, 1)
+local showCGroup = CreateClientConVar("warden_entinfo_show_cgroup", "0", true, false, "Show the collision group of the entity you're aiming at", 0, 1)
 local fontSize = CreateClientConVar("warden_entinfo_size", "-1", true, false, "Change the size of the entinfo ui (-1 = auto)", -1, 2)
 local doBlur = CreateClientConVar("warden_entinfo_blur", "1", true, false, "Whether to blur the background of the entinfo panel", 0, 1)
 
@@ -74,9 +76,7 @@ function PANEL:Reveal(goOut)
 		return
 	end
 
-	if not self.Out then
-		return
-	end
+	if not self.Out then return end
 
 	self:Stop()
 	self:AlphaTo(0, 0.25)
@@ -94,9 +94,7 @@ function PANEL:DrawParsed(right, parsed, plus)
 end
 
 function PANEL:ShowOwner(w)
-	if not showOwner:GetBool() then
-		return
-	end
+	if not showOwner:GetBool() then return end
 
 	local ownerName = self.Entity:WardenGetOwnerName()
 	local r, g, b = 255, 255, 255
@@ -115,27 +113,36 @@ function PANEL:ShowOwner(w)
 end
 
 function PANEL:ShowClass(w)
-	if not showClass:GetBool() then
-		return
+	if not showClass:GetBool() then return end
+
+	local r, g, b = 255, 255, 255
+	local clientClass = self.Entity:GetClass()
+	local serverClass = self.Entity:GetNW2String("ServerClass", clientClass)
+	local class = clientClass
+
+	if clientClass ~= serverClass then
+		if LocalPlayer():KeyDown(IN_WALK) or LocalPlayer():KeyDown(IN_SPEED) then
+			class = serverClass
+			r, g, b = 128, 192, 255
+		else
+			class = clientClass
+			r, g, b = 255, 192, 128
+		end
 	end
 
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color>%s (%s)</font>", self:GetFont(), Warden.L("class:"), self.Entity:GetClass(), self.Entity:EntIndex()))
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color><color=%s,%s,%s>%s</color> (%s)</font>", self:GetFont(), Warden.L("class:"), r, g, b, class, self.Entity:EntIndex()))
 	self:DrawParsed(w, parsed)
 end
 
 function PANEL:ShowModel(w)
-	if not showModel:GetBool() then
-		return
-	end
+	if not showModel:GetBool() then return end
 
 	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color>%s</font>", self:GetFont(), Warden.L("model:"), self.Entity:GetModel()))
 	self:DrawParsed(w, parsed)
 end
 
 function PANEL:ShowMaterial(w)
-	if not showMaterial:GetBool() then
-		return
-	end
+	if not showMaterial:GetBool() then return end
 
 	local mat = self.Entity:GetMaterial()
 	if not mat or mat == "" then
@@ -149,15 +156,56 @@ function PANEL:ShowMaterial(w)
 	self:DrawParsed(w, parsed)
 end
 
+function PANEL:ShowMass(w)
+	if not showMass:GetBool() then return end
+	if not self.Entity.Mass or self.Entity.Mass <= 0 then return end
+
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color>%s</font>", self:GetFont(), Warden.L("mass:"), math.Round(self.Entity.Mass, 2)))
+	self:DrawParsed(w, parsed)
+end
+
+local COLLISION_GROUP_NAMES = {
+	[COLLISION_GROUP_NONE] = "none (%d)",
+	[COLLISION_GROUP_DEBRIS] = "debris (%d)",
+	[COLLISION_GROUP_DEBRIS_TRIGGER] = "debris trigger (%d)",
+	[COLLISION_GROUP_INTERACTIVE_DEBRIS] = "interactive debris (%d)",
+	[COLLISION_GROUP_INTERACTIVE] = "interactive (%d)",
+	[COLLISION_GROUP_PLAYER] = "player (%d)",
+	[COLLISION_GROUP_BREAKABLE_GLASS] = "breakable glass (%d)",
+	[COLLISION_GROUP_VEHICLE] = "vehicle (%d)",
+	[COLLISION_GROUP_PLAYER_MOVEMENT] = "player movement (%d)",
+	[COLLISION_GROUP_NPC] = "npc (%d)",
+	[COLLISION_GROUP_IN_VEHICLE] = "in vehicle (%d)",
+	[COLLISION_GROUP_WEAPON] = "weapon (%d)",
+	[COLLISION_GROUP_VEHICLE_CLIP] = "vehicle clip (%d)",
+	[COLLISION_GROUP_PROJECTILE] = "projectile (%d)",
+	[COLLISION_GROUP_DOOR_BLOCKER] = "door blocker (%d)",
+	[COLLISION_GROUP_PASSABLE_DOOR] = "passable door (%d)",
+	[COLLISION_GROUP_DISSOLVING] = "dissolving (%d)",
+	[COLLISION_GROUP_PUSHAWAY] = "pushaway (%d)",
+	[COLLISION_GROUP_NPC_ACTOR] = "npc actor (%d)",
+	[COLLISION_GROUP_NPC_SCRIPTED] = "npc scripted (%d)",
+	[COLLISION_GROUP_WORLD] = "world (%d)",
+	[COLLISION_GROUP_HL2_SPIT] = "hl2 spit (%d)"
+}
+
+function PANEL:ShowCGroup(w)
+	if not showCGroup:GetBool() then return end
+
+	local group = self.Entity:GetCollisionGroup()
+	if group == COLLISION_GROUP_NONE then return end
+
+	group = Warden.L(COLLISION_GROUP_NAMES[group], group) or group
+
+	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color>%s</font>", self:GetFont(), Warden.L("collision group:"), group))
+	self:DrawParsed(w, parsed)
+end
+
 function PANEL:ShowColor(w)
-	if not showColor:GetBool() then
-		return
-	end
+	if not showColor:GetBool() then return end
 
 	local col = self.Entity:GetColor()
-	if col == color_white then
-		return
-	end
+	if col == color_white then return end
 
 	local r, g, b, a = col:Unpack()
 
@@ -166,9 +214,7 @@ function PANEL:ShowColor(w)
 end
 
 function PANEL:ShowPerms(w)
-	if not showPerms:GetBool() then
-		return
-	end
+	if not showPerms:GetBool() then return end
 
 	local shift = (self.FontSize or 0) * 3
 	surface.SetDrawColor(255, 255, 255)
@@ -228,6 +274,8 @@ function PANEL:Paint(w, h)
 	self:ShowClass(w)
 	self:ShowModel(w)
 	self:ShowMaterial(w)
+	self:ShowMass(w)
+	self:ShowCGroup(w)
 	self:ShowColor(w)
 	self:ShowPerms(w)
 
@@ -272,7 +320,6 @@ local function think()
 	end
 
 	local tr = util.GetPlayerTrace(LocalPlayer())
-	tr.mask = MASK_SHOT
 
 	local _trace = util.TraceLine(tr)
 	if not _trace.Hit or not IsValid(_trace.Entity) or _trace.Entity:IsPlayer() then
