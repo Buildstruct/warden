@@ -11,10 +11,11 @@
 local commands = BSA.Commands
 local repr = BSA.Repr
 local plugin = {}
-plugin.description = "BSA warden integration"
+plugin.description = "Warden commands and integration for BSA"
 plugin.config = {
 	alias = "warden",
-	permissions = {"warden.admin"}
+	permissions = {"warden.admin"},
+    sync = true
 }
 plugin.client_config = {
 	alias = "warden",
@@ -25,73 +26,36 @@ plugin.permissions = {"warden.admin"}
 function plugin:constructor()
 	-- BSA Warden Category
 
+    do local en = self.language:add("container", "en")
+        en:add("string", "group_description", { default = "Warden integration" })
+        en:add("string", "adminlevel_description", { default = "Set your admin level" })
+        en:add("string", "adminlevel_invoker_reply", { default = "You set your admin level to %d." })
+        en:add("string", "adminlevel_command_reply", { default = " set their admin level to %d." })
+        
+        en:add("string", "cupdis_description", { default = "Clean up disconnected player props" })
+        en:add("string", "cupdis_invoker_reply", { default = "You cleaned up all disconnected players' props." })
+        en:add("string", "cupdis_command_reply", { default = " cleaned up all disconnected players' props." })
+        
+        en:add("string", "cup_description", { default = "Clean up a player's props" })
+        en:add("string", "cup_reply", { default = "cleaned up %s's props." })
+    end
+
+    local language = self.language
+
     local group = commands:group("warden")
-        :description("Warden integration")
+        :description(language:phrase("#group_description"))
         :flattenize(true)
-
-    local function multi_target(invoker, targets, callback, response)
-        local found = {}
-        for i = 1, #targets do
-            local target = targets[i]
-            invoker:can(target, function(can)
-                if not IsValid(target) then return end
-
-                if can then
-                    found[#found+1] = target
-                    callback(target)
-                end
-
-                if i == #targets then
-                    if #found > 0 then
-                        local txt = {}
-                        for i=1, #found do
-                            txt[#txt+1] = found[i]
-                            if i ~= #found then
-                                txt[#txt+1] = ", "
-                            end
-                        end
-                        response(found, txt)
-                    else
-                        invoker:reply("couldn't find anyone to target.")
-                    end
-                end
-            end)
-        end
-    end
-    group.multi_target = multi_target
-
-    local function format_reply(invoker, ...)
-        local entity = (not invoker:serverless() and invoker.entity) and invoker.entity or invoker:username()
-        invoker:reply(...)
-        if invoker.silent then
-            local message = commands:repr(entity, " ", ...)
-            if invoker:issilent() then
-                local h, s, v = ColorToHSV(BSA.Accent)
-                v = v / 2
-                message:insert("[", HSVToColor(h, s, v), "Silent", BSA.log.__white, "] ")
-            end
-            message:watermark()
-            message:exclude(invoker.entity)
-            message:permission("commands.silent.visible")
-            return
-        end
-        commands:repr(entity, " ", ...)
-            :watermark()
-            :exclude(invoker.entity)
-            :broadcast()
-    end
-    group.format_reply = format_reply
 
     group:add("adminlevel")
         :alias("al")
         :permission("warden.admin")
-        :description("Set your admin level")
+        :description(language:phrase("#en.adminlevel_description"))
         :argument("number", {default = 0, min = 0, max = 3})
         :callback(function(invoker, level)
             invoker.entity:WardenSetAdminLevel(level)
             
-            invoker:reply("You set your admin level to " .. level .. ".")
-            commands:repr(invoker.entity, " set their admin level to " .. level .. ".")
+            invoker:reply(language:phrase("#en.adminlevel_invoker_reply", level))
+            commands:repr(language:phrase("#en.adminlevel_command_reply", level))
                 :watermark()
                 :send(entity)
         end)
@@ -99,12 +63,12 @@ function plugin:constructor()
     group:add("cleanupdisconnected")
         :alias("cupdis", "cupdisconnected", "cleanupdis")
         :permission("warden.admin")
-        :description("Clean up disconnected player props")
+        :description(language:phrase("#en.cupdis_description"))
         :callback(function(invoker)
             Warden.CleanupDisconnected()
 
-            invoker:reply("You cleaned up all disconnected players' props.")
-            commands:repr(invoker.entity, " cleaned up all disconnected players' props.")
+            invoker:reply(language:phrase("en.cupdis_invoker_reply"))
+            commands:repr(invoker.entity, language:phrase("en.cupdis_command_reply"))
                 :watermark()
                 :broadcast()
         end)
@@ -113,29 +77,20 @@ function plugin:constructor()
         :alias("cup")
         :playeronly()
         :permission("warden.admin")
-        :description("Clean up a player's props")
+        :description(language:phrase("#en.cup_description"))
         :argument("player", {})
         :callback(function(invoker, targets)
-            multi_target(invoker, targets, function(target)
+            invoker:multi_target(targets, function(target)
                 target:WardenCleanupEntities()
+                
+            end, function(targets)
+                local names = {}
+                for _, v in ipairs(targets) do 
+                    if not IsValid(v) then continue end 
+                    names[#names + 1] = v:Name() 
+                end
 
-            end, function(targets, formatted)
-                format_reply(invoker, "cleaned up ", unpack(formatted), "'s props.")
-            end)
-        end)
-
-    group:add("pfreezeprops")
-        :alias("pfz")
-        :playeronly()
-        :permission("warden.admin")
-        :description("Freeze players' props.")
-        :argument("player", {})
-        :callback(function(invoker, targets)
-            multi_target(invoker, targets, function(target)
-                target:WardenFreezeEntities()
-
-            end, function(targets, formatted)
-                format_reply(invoker, "froze ", unpack(formatted), "'s props.")
+                invoker:reply_all(language:phrase("#en.cup_reply", table.concat(names, ", ")))
             end)
         end)
 end
