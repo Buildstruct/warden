@@ -140,4 +140,11 @@ function plugin:constructor()
         end)
 end
 
+function plugin:destructor()
+	commands:remove("warden")
+    self.forcedPlayers = nil
+end
+
+BSA.Plugins:add("warden", plugin)
+
 SetGlobalString("WardenCommands", "bsa")
