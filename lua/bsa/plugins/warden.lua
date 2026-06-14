@@ -50,7 +50,7 @@ function plugin:constructor()
         :alias("al")
         :permission("warden.admin")
         :description(language:phrase("#en.adminlevel_description"))
-        :argument("number", {default = 0, min = 0, max = Warden.GetServerSetting("admin_level_filter_bypass")})
+        :argument("number", {default = Warden.GetServerSetting("default_admin_level"), min = Warden.ADMIN_LEVEL_MIN, max = Warden.GetServerSetting("admin_level_filter_bypass")})
         :callback(function(invoker, level)
             invoker.entity:WardenSetAdminLevel(level)
             
