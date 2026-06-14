@@ -139,3 +139,5 @@ function plugin:constructor()
             end)
         end)
 end
+
+SetGlobalString("WardenCommands", "bsa")
