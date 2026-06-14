@@ -98,6 +98,11 @@ local function onCami()
 			Warden.AddCustomCmdPermCallback(perm, function(ply)
 				return ply:HasPerm(altPerm) or false
 			end)
+		end,
+		bsa = function(perm, altPerm)
+			Warden.AddCustomCmdPermCallback(perm, function(ply)
+				return ply:HasPermission(altPerm) or false
+			end)
 		end
 	}
 
@@ -105,22 +110,26 @@ local function onCami()
 		warden_cleanup_entities = {
 			sam = "cleanup",
 			ulx = "ulx cleanup",
-			nadmin = "cleanup"
+			nadmin = "cleanup",
+			bsa = "warden.admin"
 		},
 		warden_freeze_entities = {
 			sam = "pfreezeprops",
 			ulx = "ulx pfreezeprops",
-			nadmin = "pfreezeprops"
+			nadmin = "pfreezeprops",
+			bsa = "warden.admin"
 		},
 		warden_cleanup_disconnected = {
 			sam = "cleanupdisconnected",
 			ulx = "ulx cupdis",
-			nadmin = "cupdis"
+			nadmin = "cupdis",
+			bsa = "warden.admin"
 		},
 		warden_admin_level = {
 			sam = "adminlevel",
 			ulx = "ulx adminlevel",
-			nadmin = "adminlevel"
+			nadmin = "adminlevel",
+			bsa = "warden.admin"
 		}
 	}
 
