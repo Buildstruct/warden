@@ -111,25 +111,25 @@ local function onCami()
 			sam = "cleanup",
 			ulx = "ulx cleanup",
 			nadmin = "cleanup",
-			bsa = "warden cleanup"
+			bsa = "warden.admin"
 		},
 		warden_freeze_entities = {
 			sam = "pfreezeprops",
 			ulx = "ulx pfreezeprops",
 			nadmin = "pfreezeprops",
-			bsa = "warden pfreezeprops"
+			bsa = "warden.admin"
 		},
 		warden_cleanup_disconnected = {
 			sam = "cleanupdisconnected",
 			ulx = "ulx cupdis",
 			nadmin = "cupdis",
-			bsa = "warden cleanupdisconnected"
+			bsa = "warden.admin"
 		},
 		warden_admin_level = {
 			sam = "adminlevel",
 			ulx = "ulx adminlevel",
 			nadmin = "adminlevel",
-			bsa = "warden adminlevel"
+			bsa = "warden.admin"
 		}
 	}
 
