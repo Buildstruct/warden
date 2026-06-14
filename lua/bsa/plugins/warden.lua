@@ -8,11 +8,15 @@
 	BSA Warden Commands
 ]]
     
-local repr = BSA.Repr
 local commands = BSA.Commands
+local repr = BSA.Repr
 local plugin = {}
 plugin.description = "BSA warden integration"
 plugin.config = {
+	alias = "warden",
+	permissions = {"warden.admin"}
+}
+plugin.client_config = {
 	alias = "warden",
 	permissions = {"warden.admin"}
 }
@@ -80,7 +84,7 @@ function plugin:constructor()
 
     group:add("adminlevel")
         :alias("al")
-        :permission("cami.warden_admin_level")
+        :permission("warden.admin")
         :description("Set your admin level")
         :argument("number", {default = 0, min = 0, max = 3})
         :callback(function(invoker, level)
@@ -94,7 +98,7 @@ function plugin:constructor()
 
     group:add("cleanupdisconnected")
         :alias("cupdis", "cupdisconnected", "cleanupdis")
-        :permission("cami.warden_cleanup_disconnected")
+        :permission("warden.admin")
         :description("Clean up disconnected player props")
         :callback(function(invoker)
             local entity = invoker.entity
@@ -108,7 +112,7 @@ function plugin:constructor()
     group:add("cleanup")
         :alias("cup")
         :playeronly()
-        :permission("cami.warden_cleanup_entities")
+        :permission("warden.admin")
         :description("Clean up a player's props")
         :argument("player", {})
         :callback(function(invoker, targets)
@@ -123,7 +127,7 @@ function plugin:constructor()
     group:add("pfreezeprops")
         :alias("pfz")
         :playeronly()
-        :permission("cami.warden_freeze_entities")
+        :permission("warden.admin")
         :description("Freeze players' props.")
         :argument("player", {})
         :callback(function(invoker, targets)
