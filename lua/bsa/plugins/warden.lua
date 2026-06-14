@@ -52,7 +52,7 @@ function plugin:constructor()
                         end
                         response(found, txt)
                     else
-                        invoker:reply(language:phrase("#commands.fun.responses.no_targets"))
+                        invoker:reply("couldn't find anyone to target.")
                     end
                 end
             end)
@@ -88,10 +88,10 @@ function plugin:constructor()
         :description("Set your admin level")
         :argument("number", {default = 0, min = 0, max = 3})
         :callback(function(invoker, level)
-            local entity = invoker.entity
-
-            entity:WardenSetAdminLevel(level)
-            commands:repr("Set your admin level to " .. level .. ".")
+            invoker.entity:WardenSetAdminLevel(level)
+            
+            invoker:reply("You set your admin level to " .. level .. ".")
+            commands:repr(invoker.entity, " set their admin level to " .. level .. ".")
                 :watermark()
                 :send(entity)
         end)
@@ -101,10 +101,10 @@ function plugin:constructor()
         :permission("warden.admin")
         :description("Clean up disconnected player props")
         :callback(function(invoker)
-            local entity = invoker.entity
             Warden.CleanupDisconnected()
 
-            commands:repr(entity, " cleaned up all disconnected players' props.")
+            invoker:reply("You cleaned up all disconnected players' props.")
+            commands:repr(invoker.entity, " cleaned up all disconnected players' props.")
                 :watermark()
                 :broadcast()
         end)
