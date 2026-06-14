@@ -50,7 +50,7 @@ function plugin:constructor()
         :alias("al")
         :permission("warden.admin")
         :description(language:phrase("#en.adminlevel_description"))
-        :argument("number", {default = 0, min = 0, max = 3})
+        :argument("number", {default = 0, min = 0, max = Warden.GetServerSetting("admin_level_filter_bypass")})
         :callback(function(invoker, level)
             invoker.entity:WardenSetAdminLevel(level)
             
@@ -67,8 +67,8 @@ function plugin:constructor()
         :callback(function(invoker)
             Warden.CleanupDisconnected()
 
-            invoker:reply(language:phrase("en.cupdis_invoker_reply"))
-            commands:repr(invoker.entity, language:phrase("en.cupdis_command_reply"))
+            invoker:reply(language:phrase("#en.cupdis_invoker_reply"))
+            commands:repr(invoker.entity, language:phrase("#en.cupdis_command_reply"))
                 :watermark()
                 :broadcast()
         end)
@@ -93,6 +93,10 @@ function plugin:constructor()
                 invoker:reply_all(language:phrase("#en.cup_reply", table.concat(names, ", ")))
             end)
         end)
+
+    --alias bsa's freezeprops command
+    commands:find("fun", "freezeprops")
+        :alias("pfreezeprops")
 end
 
 function plugin:destructor()
