@@ -42,61 +42,63 @@ function plugin:constructor()
 
     local language = self.language
 
-    local group = commands:group("warden")
-        :description(language:phrase("#group_description"))
-        :flattenize(true)
+    if SERVER then 
+        local group = commands:group("warden")
+            :description(language:phrase("#group_description"))
+            :flattenize(true)
 
-    group:add("adminlevel")
-        :alias("al")
-        :permission("warden.admin")
-        :description(language:phrase("#en.adminlevel_description"))
-        :argument("number", {default = Warden.GetServerSetting("default_admin_level"), min = Warden.ADMIN_LEVEL_MIN, max = Warden.GetServerSetting("admin_level_filter_bypass")})
-        :callback(function(invoker, level)
-            invoker.entity:WardenSetAdminLevel(level)
-            
-            invoker:reply(language:phrase("#en.adminlevel_invoker_reply", level))
-            commands:repr(language:phrase("#en.adminlevel_command_reply", level))
-                :watermark()
-                :send(entity)
-        end)
-
-    group:add("cleanupdisconnected")
-        :alias("cupdis", "cupdisconnected", "cleanupdis")
-        :permission("warden.admin")
-        :description(language:phrase("#en.cupdis_description"))
-        :callback(function(invoker)
-            Warden.CleanupDisconnected()
-
-            invoker:reply(language:phrase("#en.cupdis_invoker_reply"))
-            commands:repr(invoker.entity, language:phrase("#en.cupdis_command_reply"))
-                :watermark()
-                :broadcast()
-        end)
-
-    group:add("cleanup")
-        :alias("cup")
-        :playeronly()
-        :permission("warden.admin")
-        :description(language:phrase("#en.cup_description"))
-        :argument("player", {})
-        :callback(function(invoker, targets)
-            invoker:multi_target(targets, function(target)
-                target:WardenCleanupEntities()
+        group:add("adminlevel")
+            :alias("al")
+            :permission("warden.admin")
+            :description(language:phrase("#en.adminlevel_description"))
+            :argument("number", {default = Warden.GetServerSetting("default_admin_level"), min = Warden.ADMIN_LEVEL_MIN, max = Warden.GetServerSetting("admin_level_filter_bypass")})
+            :callback(function(invoker, level)
+                invoker.entity:WardenSetAdminLevel(level)
                 
-            end, function(targets)
-                local names = {}
-                for _, v in ipairs(targets) do 
-                    if not IsValid(v) then continue end 
-                    names[#names + 1] = v:Name() 
-                end
-
-                invoker:reply_all(language:phrase("#en.cup_reply", table.concat(names, ", ")))
+                invoker:reply(language:phrase("#en.adminlevel_invoker_reply", level))
+                commands:repr(language:phrase("#en.adminlevel_command_reply", level))
+                    :watermark()
+                    :send(entity)
             end)
-        end)
 
-    --alias bsa's freezeprops command
-    commands:find("fun", "freezeprops")
-        :alias("pfreezeprops")
+        group:add("cleanupdisconnected")
+            :alias("cupdis", "cupdisconnected", "cleanupdis")
+            :permission("warden.admin")
+            :description(language:phrase("#en.cupdis_description"))
+            :callback(function(invoker)
+                Warden.CleanupDisconnected()
+
+                invoker:reply(language:phrase("#en.cupdis_invoker_reply"))
+                commands:repr(invoker.entity, language:phrase("#en.cupdis_command_reply"))
+                    :watermark()
+                    :broadcast()
+            end)
+
+        group:add("cleanup")
+            :alias("cup")
+            :playeronly()
+            :permission("warden.admin")
+            :description(language:phrase("#en.cup_description"))
+            :argument("player", {})
+            :callback(function(invoker, targets)
+                invoker:multi_target(targets, function(target)
+                    target:WardenCleanupEntities()
+                    
+                end, function(targets)
+                    local names = {}
+                    for _, v in ipairs(targets) do 
+                        if not IsValid(v) then continue end 
+                        names[#names + 1] = v:Name() 
+                    end
+
+                    invoker:reply_all(language:phrase("#en.cup_reply", table.concat(names, ", ")))
+                end)
+            end)
+
+        --alias bsa's freezeprops command
+        commands:find("fun", "freezeprops")
+            :alias("pfreezeprops")
+        end
 end
 
 function plugin:destructor()
