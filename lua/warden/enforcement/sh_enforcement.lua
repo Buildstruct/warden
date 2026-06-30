@@ -1,6 +1,6 @@
 hook.Add("CanTool", "Warden", function(ply, tr)
 	local ent = tr.Entity
-	if ent:IsWorld() then return true end
+	if ent:IsWorld() then return end
 
 	if not Warden.CheckPermission(ply, ent, Warden.PERMISSION_TOOL) then
 		return false
