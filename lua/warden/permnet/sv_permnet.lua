@@ -74,7 +74,7 @@ end
 
 -- determine whether to grant or revoke based on a bool
 function Warden.PermissionRequest(granter, receiver, val, keyOrID)
-	local blockRequest = hook.Run("WardenBlockPermissionRequest", granter, receiver, val, keyOrID) 
+	local blockRequest = hook.Run("WardenPermissionRequest", granter, receiver, val, keyOrID) 
 	if blockRequest == true then return end 
 	
 	if val then
