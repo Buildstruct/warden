@@ -12,14 +12,6 @@ local doBlur = CreateClientConVar("warden_entinfo_blur", "1", true, false, "Whet
 
 local PANEL = {}
 
-local isHoldingCamera
-hook.Add("HUDPaint", "Warden_EntInfo", function()
-	isHoldingCamera = nil
-end)
-hook.Add("PostRender", "Warden_EntInfo", function()
-	isHoldingCamera = true
-end)
-
 local hideHud = not GetConVar("cl_drawhud"):GetBool()
 
 cvars.AddChangeCallback("cl_drawhud", function(_, _, val)
@@ -249,7 +241,7 @@ end
 
 function PANEL:Paint(w, h)
 	if hook.Run("HUDShouldDraw", "WardenEntInfo") == false then return end
-	if isHoldingCamera or hideHud then return end
+	if hideHud then return end
 
 	self:Blur()
 	self:DetermineFontSize()
