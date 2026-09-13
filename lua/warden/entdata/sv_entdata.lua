@@ -1,7 +1,5 @@
 util.AddNetworkString("WardenEntData")
 
-local trackedEnts = {}
-
 local function updateData(ent)
 	local phys = ent:GetPhysicsObject()
 	if phys:IsValid() then
@@ -23,7 +21,6 @@ hook.Add("OnEntityCreated", "WardenEntData", function(ent)
 	timer.Simple(0, function()
 		if not ent:IsValid() then return end
 
-		trackedEnts[ent:EntIndex()] = ent
 		updateData(ent)
 		ent:SetNW2String("ServerClass", ent:GetClass())
 	end)
@@ -42,6 +39,13 @@ local PING_KEYS = {
 	[IN_GRENADE1] = true
 }
 
+local function updateDataFromHook(ent)
+	timer.Create("WardenEntDataPing_" .. ent:EntIndex(), 0, 1, function()
+		if not ent:IsValid() then return end
+		updateData(ent)
+	end)
+end
+
 hook.Add("KeyPress", "WardenEntData", function(ply, key)
 	if not PING_KEYS[key] then return end
 
@@ -49,15 +53,9 @@ hook.Add("KeyPress", "WardenEntData", function(ply, key)
 	local ent = tr.Entity
 	if not ent:IsValid() then return end
 
-	timer.Create("WardenEntDataPing_" .. ent:EntIndex(), 0, 1, function()
-		if not ent:IsValid() then return end
-		updateData(ent)
-	end)
+	updateDataFromHook(ent)
 end)
 
 hook.Add("PhysgunDrop", "WardenEntData", function(_, ent)
-	timer.Create("WardenEntDataPing_" .. ent:EntIndex(), 0, 1, function()
-		if not ent:IsValid() then return end
-		updateData(ent)
-	end)
+	updateDataFromHook(ent)
 end)
