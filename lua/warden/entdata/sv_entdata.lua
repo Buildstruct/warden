@@ -29,17 +29,6 @@ hook.Add("OnEntityCreated", "WardenEntData", function(ent)
 	end)
 end)
 
-timer.Create("WardenTrackedEnts", 10, 0, function()
-	for id, ent in pairs(trackedEnts) do
-		if not ent:IsValid() then
-			trackedEnts[id] = nil
-			continue
-		end
-
-		updateData(ent)
-	end
-end)
-
 local PING_KEYS = {
 	[IN_ATTACK] = true,
 	[IN_USE] = true,

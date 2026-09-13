@@ -7,9 +7,8 @@
 	╚═════╝ ╚══════╝╚═╝  ╚═╝
 	BSA Warden Commands
 ]]
-	
+
 local commands = BSA.Commands
-local repr = BSA.Repr
 local plugin = {}
 plugin.description = "Warden commands and integration for BSA"
 plugin.config = {
@@ -31,18 +30,18 @@ function plugin:constructor()
 		en:add("string", "adminlevel_description", { default = "Set your admin level" })
 		en:add("string", "adminlevel_invoker_reply", { default = "You set your admin level to %d." })
 		en:add("string", "adminlevel_command_reply", { default = " set their admin level to %d." })
-		
+
 		en:add("string", "cupdis_description", { default = "Clean up disconnected player props" })
 		en:add("string", "cupdis_invoker_reply", { default = "You cleaned up all disconnected players' props." })
 		en:add("string", "cupdis_command_reply", { default = " cleaned up all disconnected players' props." })
-		
+
 		en:add("string", "cup_description", { default = "Clean up a player's props" })
 		en:add("string", "cup_reply", { default = "cleaned up %s's props." })
 	end
 
 	local language = self.language
 
-	if SERVER then 
+	if SERVER then
 		local group = commands:group("warden")
 			:description(language:phrase("#group_description"))
 			:flattenize(true)
@@ -54,7 +53,7 @@ function plugin:constructor()
 			:argument("number", {default = Warden.GetServerSetting("default_admin_level"), min = Warden.ADMIN_LEVEL_MIN, max = Warden.GetServerSetting("admin_level_filter_bypass")})
 			:callback(function(invoker, level)
 				invoker.entity:WardenSetAdminLevel(level)
-				
+
 				invoker:reply(language:phrase("#en.adminlevel_invoker_reply", level))
 				commands:repr(language:phrase("#en.adminlevel_command_reply", level))
 					:watermark()
@@ -83,12 +82,12 @@ function plugin:constructor()
 			:callback(function(invoker, targets)
 				invoker:multi_target(targets, function(target)
 					target:WardenCleanupEntities()
-					
-				end, function(targets)
+
+				end, function(targets1)
 					local names = {}
-					for _, v in ipairs(targets) do 
-						if not IsValid(v) then continue end 
-						names[#names + 1] = v:Name() 
+					for _, v in ipairs(targets1) do
+						if not IsValid(v) then continue end
+						names[#names + 1] = v:Name()
 					end
 
 					invoker:reply_all(language:phrase("#en.cup_reply", table.concat(names, ", ")))
