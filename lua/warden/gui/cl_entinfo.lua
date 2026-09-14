@@ -9,152 +9,7 @@ local showPerms = CreateClientConVar("warden_entinfo_show_perms", "1", true, fal
 local showCGroup = CreateClientConVar("warden_entinfo_show_cgroup", "0", true, false, "Show the collision group of the entity you're aiming at", 0, 1)
 local fontSize = CreateClientConVar("warden_entinfo_size", "-1", true, false, "Change the size of the entinfo ui (-1 = auto)", -1, 2)
 local doBlur = CreateClientConVar("warden_entinfo_blur", "1", true, false, "Whether to blur the background of the entinfo panel", 0, 1)
-
-local PANEL = {}
-
-local hideHud = not GetConVar("cl_drawhud"):GetBool()
-
-cvars.AddChangeCallback("cl_drawhud", function(_, _, val)
-	hideHud = val == "0"
-end, "WardenHideEntInfo")
-
-function PANEL:Init()
-	self:SetAlpha(0)
-
-	self.Width, self.Height = 174, 30
-
-	self:SetSize(self.Width, self.Height)
-end
-
-function PANEL:DetermineFontSize()
-	local size = fontSize:GetInt()
-
-	if size >= 0 then
-		self.FontSize = size
-		return
-	end
-
-	if ScrW() > 3200 then
-		self.FontSize = 2
-	elseif ScrW() > 2200 then
-		self.FontSize = 1
-	else
-		self.FontSize = 0
-	end
-end
-
-function PANEL:GetFont(big)
-	return string.format("WardenEnt%s%s", big and "Big" or "", self.FontSize or 0)
-end
-
-function PANEL:PerformLayout(w, h)
-	self:SetPos(ScrW() - w, ScrH() / 2 - h / 2 - 40)
-end
-
-function PANEL:SetEntity(ent)
-	self.Entity = ent
-end
-
-function PANEL:Reveal(goOut)
-	if goOut then
-		if self.Out then
-			return
-		end
-
-		self:Stop()
-		self:AlphaTo(255, 0.1)
-		self.Out = true
-
-		return
-	end
-
-	if not self.Out then return end
-
-	self:Stop()
-	self:AlphaTo(0, 0.25)
-	self.Out = nil
-end
-
-function PANEL:DrawParsed(right, parsed, plus)
-	plus = plus or 0
-	local x, y = parsed:Size()
-	self.ThisWidth, self.ThisHeight = math.max(self.ThisWidth, x + 8 + plus), self.ThisHeight + y
-
-	parsed:Draw(right - 4, self.ItemY, TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
-
-	self.ItemY = self.ItemY + parsed:GetHeight()
-end
-
-function PANEL:ShowOwner(w)
-	if not showOwner:GetBool() then return end
-
-	local ownerName = self.Entity:WardenGetOwnerName()
-	local r, g, b = 255, 255, 255
-
-	local ownerID = self.Entity:WardenGetOwnerID()
-	if ownerID == "World" then
-		ownerName = Warden.L("[[WORLD]]")
-		r, g, b = 255, 128, 255
-	elseif not ownerName or not ownerID or ownerID == "" then
-		ownerName = Warden.L("[[NONE]]")
-		r, g, b = 255, 192, 128
-	end
-
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color><color=%s,%s,%s>%s</color></font>", self:GetFont(true), Warden.L("owner:"), r, g, b, ownerName))
-	self:DrawParsed(w, parsed)
-end
-
-function PANEL:ShowClass(w)
-	if not showClass:GetBool() then return end
-
-	local r, g, b = 255, 255, 255
-	local clientClass = self.Entity:GetClass()
-	local serverClass = self.Entity:GetNW2String("ServerClass", clientClass)
-	local class = clientClass
-
-	if clientClass ~= serverClass then
-		if LocalPlayer():KeyDown(IN_WALK) or LocalPlayer():KeyDown(IN_SPEED) then
-			class = serverClass
-			r, g, b = 128, 192, 255
-		else
-			class = clientClass
-			r, g, b = 255, 192, 128
-		end
-	end
-
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color><color=%s,%s,%s>%s</color> (%s)</font>", self:GetFont(), Warden.L("class:"), r, g, b, class, self.Entity:EntIndex()))
-	self:DrawParsed(w, parsed)
-end
-
-function PANEL:ShowModel(w)
-	if not showModel:GetBool() then return end
-
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color>%s</font>", self:GetFont(), Warden.L("model:"), self.Entity:GetModel()))
-	self:DrawParsed(w, parsed)
-end
-
-function PANEL:ShowMaterial(w)
-	if not showMaterial:GetBool() then return end
-
-	local mat = self.Entity:GetMaterial()
-	if not mat or mat == "" then
-		mat = self.Entity:GetMaterials()[1]
-	end
-	if not mat or mat == "" then
-		return
-	end
-
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color>%s</font>", self:GetFont(), Warden.L("material:"), mat))
-	self:DrawParsed(w, parsed)
-end
-
-function PANEL:ShowMass(w)
-	if not showMass:GetBool() then return end
-	if not self.Entity.Mass or self.Entity.Mass <= 0 then return end
-
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color>%s</font>", self:GetFont(), Warden.L("mass:"), math.Round(self.Entity.Mass, 2)))
-	self:DrawParsed(w, parsed)
-end
+local doFollowCursor = CreateClientConVar("warden_entinfo_followcursor", "1", true, false, "Whether the entinfo panel follows the cursor in the context menu", 0, 1)
 
 local COLLISION_GROUP_NAMES = {
 	[COLLISION_GROUP_NONE] = "none (%d)",
@@ -181,7 +36,163 @@ local COLLISION_GROUP_NAMES = {
 	[COLLISION_GROUP_HL2_SPIT] = "hl2 spit (%d)"
 }
 
-function PANEL:ShowCGroup(w)
+local LABEL_COLOR = { 192, 192, 192 }
+local BASE_COLOR = { 255, 255, 255 }
+local R_COLOR = { 255, 128, 128 }
+local G_COLOR = { 128, 255, 128 }
+local B_COLOR = { 128, 128, 255 }
+local CLIENT_COLOR = { 255, 192, 128 }
+local SERVER_COLOR = { 128, 192, 255 }
+local WORLD_COLOR = { 255, 128, 255 }
+local NONE_COLOR = { 255, 192, 128 }
+
+local contextMenuOpen
+
+hook.Add("OnContextMenuOpen", "WardenEntInfo", function()
+	contextMenuOpen = true
+end)
+
+hook.Add("OnContextMenuClose", "WardenEntInfo", function()
+	contextMenuOpen = nil
+end)
+
+local hideHud = not GetConVar("cl_drawhud"):GetBool()
+
+cvars.AddChangeCallback("cl_drawhud", function(_, _, val)
+	hideHud = val == "0"
+end, "WardenHideEntInfo")
+
+local PANEL = {}
+
+function PANEL:Init()
+	self:SetAlpha(0)
+
+	self.WorkingWidth, self.WorkingHeight = 10, 10
+	self.MouseX, self.MouseY = 0, 0
+	self.MouseFollowLerp = 0
+	self.RightAlign = true
+end
+
+function PANEL:Paint(w, h)
+	if self:GetAlpha() == 0 or hideHud then return end
+	if hook.Run("HUDShouldDraw", "WardenEntInfo") == false then return end
+
+	self:Blur()
+	surface.SetDrawColor(0, 0, 0, 200)
+	surface.DrawRect(0, 0, w, h)
+
+	if not IsValid(self.Entity) then return end
+
+	self.WorkingWidth, self.WorkingHeight = 0, 4
+
+	self:ShowOwner()
+	self:ShowClass()
+	self:ShowModel()
+	self:ShowMaterial()
+	self:ShowMass()
+	self:ShowCGroup()
+	self:ShowColor()
+	self:ShowPerms()
+	self:ShowBottomBar()
+
+	self.WorkingHeight = self.WorkingHeight + 4
+end
+
+function PANEL:Think()
+	if not enabled:GetBool() then
+		self:Reveal(false)
+		return
+	end
+
+	if self.WorkingWidth ~= self:GetWide() or self.WorkingHeight ~= self:GetTall() then
+		self:SetSize(self.WorkingWidth, self.WorkingHeight)
+	end
+
+	self:DeterminePos()
+
+	local tr = LocalPlayer():GetEyeTrace()
+	if not tr.Hit or not IsValid(tr.Entity) or tr.Entity:IsPlayer() then
+		self:Reveal(false)
+		return
+	end
+
+	self:DetermineFontSize()
+
+	self:Reveal(true)
+	self.Entity = tr.Entity
+end
+
+function PANEL:ShowOwner()
+	if not showOwner:GetBool() then return end
+
+	local ownerName = self.Entity:WardenGetOwnerName()
+	local valueColor = BASE_COLOR
+
+	local ownerID = self.Entity:WardenGetOwnerID()
+	if ownerID == "World" then
+		ownerName = Warden.L("[[WORLD]]")
+		valueColor = WORLD_COLOR
+	elseif not ownerName or not ownerID or ownerID == "" then
+		ownerName = Warden.L("[[NONE]]")
+		valueColor = NONE_COLOR
+	end
+
+	surface.SetFont(self:GetFont(true))
+	self:DrawColorText(LABEL_COLOR, Warden.L("owner:"), " ", valueColor, ownerName)
+end
+
+function PANEL:ShowClass()
+	if not showClass:GetBool() then return end
+
+	local valueColor = BASE_COLOR
+	local clientClass = self.Entity:GetClass()
+	local serverClass = self.Entity:GetNW2String("ServerClass", clientClass)
+	local class = clientClass
+
+	if clientClass ~= serverClass then
+		if LocalPlayer():KeyDown(IN_WALK) or LocalPlayer():KeyDown(IN_SPEED) then
+			class = serverClass
+			valueColor = SERVER_COLOR
+		else
+			class = clientClass
+			valueColor = CLIENT_COLOR
+		end
+	end
+
+	surface.SetFont(self:GetFont())
+	self:DrawColorText(LABEL_COLOR, Warden.L("class:"), " ", valueColor, class, BASE_COLOR, string.format(" (%s)", self.Entity:EntIndex()))
+end
+
+function PANEL:ShowModel()
+	if not showModel:GetBool() then return end
+
+	surface.SetFont(self:GetFont())
+	self:DrawColorText(LABEL_COLOR, Warden.L("model:"), " ", BASE_COLOR, self.Entity:GetModel())
+end
+
+function PANEL:ShowMaterial()
+	if not showMaterial:GetBool() then return end
+
+	local mat = self.Entity:GetMaterial()
+	if not mat or mat == "" then
+		mat = self.Entity:GetMaterials()[1]
+	end
+
+	if not mat or mat == "" then return end
+
+	surface.SetFont(self:GetFont())
+	self:DrawColorText(LABEL_COLOR, Warden.L("material:"), " ", BASE_COLOR, mat)
+end
+
+function PANEL:ShowMass()
+	if not showMass:GetBool() then return end
+	if not self.Entity.Mass or self.Entity.Mass <= 0 then return end
+
+	surface.SetFont(self:GetFont())
+	self:DrawColorText(LABEL_COLOR, Warden.L("mass:"), " ", BASE_COLOR, math.Round(self.Entity.Mass, 2))
+end
+
+function PANEL:ShowCGroup()
 	if not showCGroup:GetBool() then return end
 
 	local group = self.Entity:GetCollisionGroup()
@@ -189,11 +200,11 @@ function PANEL:ShowCGroup(w)
 
 	group = Warden.L(COLLISION_GROUP_NAMES[group], group) or group
 
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color>%s</font>", self:GetFont(), Warden.L("collision group:"), group))
-	self:DrawParsed(w, parsed)
+	surface.SetFont(self:GetFont())
+	self:DrawColorText(LABEL_COLOR, Warden.L("collision group:"), " ", BASE_COLOR, group)
 end
 
-function PANEL:ShowColor(w)
+function PANEL:ShowColor()
 	if not showColor:GetBool() then return end
 
 	local col = self.Entity:GetColor()
@@ -201,87 +212,46 @@ function PANEL:ShowColor(w)
 
 	local r, g, b, a = col:Unpack()
 
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color><color=%s,%s,%s>●</color> [<color=255,128,128>%s</color>, <color=128,255,128>%s</color>, <color=128,128,255>%s</color>, %s]</font>", self:GetFont(), Warden.L("color:"), r, g, b, r, g, b, a))
-	self:DrawParsed(w, parsed)
+	surface.SetFont(self:GetFont())
+	self:DrawColorText(LABEL_COLOR, Warden.L("color:"), " ", { r, g, b }, "●", R_COLOR, r, G_COLOR, g, B_COLOR, b, BASE_COLOR, a)
 end
 
-function PANEL:ShowPerms(w)
+function PANEL:ShowPerms()
 	if not showPerms:GetBool() then return end
 
+	local perms = Warden.GetAllPermissions(LocalPlayer(), self.Entity)
+	local totalWidth = table.Count(perms) * 20
+
+	if totalWidth == 0 then return end
+
+	surface.SetFont(self:GetFont())
+	local textWidth, textHeight = self:DrawColorText(LABEL_COLOR, Warden.L("perms:"), " ", { gap = totalWidth - 4 })
+
+	local cursor = self.RightAlign and self:GetWide() - totalWidth or textWidth - totalWidth + 8
 	local shift = (self.FontSize or 0) * 3
 	surface.SetDrawColor(255, 255, 255)
 
-	local perms = Warden.GetAllPermissions(LocalPlayer(), self.Entity)
-	local c = table.Count(perms) * 20
-
-	if c == 0 then return end
-
-	local plus = c
 	for k, v in pairs(perms) do
 		surface.SetMaterial(v:GetIcon())
-		surface.DrawTexturedRect(w - plus - 2, self.ItemY + shift, 16, 16)
-		plus = plus - 20
+		surface.DrawTexturedRect(cursor, self.WorkingHeight - textHeight + shift, 16, 16)
+		cursor = cursor + 20
 	end
-
-	local parsed = markup.Parse(string.format("<font=%s><color=192,192,192>%s </color></font>", self:GetFont(), Warden.L("perms:")))
-	self:DrawParsed(w - c, parsed, c)
 end
 
-function PANEL:SetEntColor()
+function PANEL:ShowBottomBar()
 	local owner = Warden.GetOwner(self.Entity)
 
-	if not IsValid(owner) then
-		surface.SetDrawColor(0, 0, 0, 0)
-		return
-	end
+	if not IsValid(owner) then return end
 
 	local r, g, b = team.GetColor(owner:Team()):Unpack()
 	surface.SetDrawColor(r, g, b)
-end
-
-function PANEL:Paint(w, h)
-	if hook.Run("HUDShouldDraw", "WardenEntInfo") == false then return end
-	if hideHud then return end
-
-	self:Blur()
-	self:DetermineFontSize()
-
-	surface.SetDrawColor(0, 0, 0, 200)
-	surface.DrawRect(0, 0, w, h)
-
-	if not IsValid(self.Entity) then
-		surface.SetDrawColor(team.GetColor(LocalPlayer():Team()))
-		surface.DrawRect(0, h - 3, w, h)
-
-		return
-	end
-
-	self:SetEntColor()
-	surface.DrawRect(0, h - 3, w, h)
-
-	self.ThisWidth, self.ThisHeight = 8, 8
-	self.ItemY = 4
-
-	self:ShowOwner(w)
-	self:ShowClass(w)
-	self:ShowModel(w)
-	self:ShowMaterial(w)
-	self:ShowMass(w)
-	self:ShowCGroup(w)
-	self:ShowColor(w)
-	self:ShowPerms(w)
-
-	if self.ThisWidth ~= self.Width or self.ThisHeight ~= self.Height then
-		self:SetSize(self.ThisWidth, self.ThisHeight)
-		self.Width, self.Height = self.ThisWidth, self.ThisHeight
-	end
+	surface.DrawRect(0, self:GetTall() - 4, self:GetWide(), 4)
+	self.WorkingHeight = self.WorkingHeight + 4
 end
 
 local blur = Material("pp/blurscreen")
 function PANEL:Blur()
-	if not doBlur:GetBool() then
-		return
-	end
+	if not doBlur:GetBool() then return end
 
 	local x, y = self:LocalToScreen(0, 0)
 
@@ -299,29 +269,103 @@ function PANEL:Blur()
 	DisableClipping(clipping)
 end
 
-vgui.Register("WardenEntityInfo", PANEL, "DPanel")
+function PANEL:Reveal(reveal)
+	if reveal then
+		if self.Revealed then return end
 
-local function think()
-	if not IsValid(Warden.EntityInfo) then
+		self:Stop()
+		self:AlphaTo(255, 0.1)
+		self.Revealed = true
+
 		return
 	end
 
-	if not enabled:GetBool() then
-		Warden.EntityInfo:Reveal(false)
-		return
-	end
+	if not self.Revealed then return end
 
-	local tr = util.GetPlayerTrace(LocalPlayer())
-
-	local _trace = util.TraceLine(tr)
-	if not _trace.Hit or not IsValid(_trace.Entity) or _trace.Entity:IsPlayer() then
-		Warden.EntityInfo:Reveal(false)
-		return
-	end
-
-	Warden.EntityInfo:Reveal(true)
-	Warden.EntityInfo:SetEntity(_trace.Entity)
+	self:Stop()
+	self:AlphaTo(0, 0.25)
+	self.Revealed = nil
 end
+
+function PANEL:DeterminePos()
+	if contextMenuOpen and doFollowCursor:GetBool() then
+		self.RightAlign = nil
+		self.MouseX, self.MouseY = gui.MouseX(), gui.MouseY() -- only setting this here prevents snapping to the top left corner
+
+		if self.MouseFollowLerp > 0.995 then
+			self.MouseFollowLerp = 1
+		else
+			self.MouseFollowLerp = self.MouseFollowLerp + (1 - self.MouseFollowLerp) * 20 * FrameTime()
+		end
+	else
+		self.RightAlign = true
+
+		if self.MouseFollowLerp < 0.005 then
+			self.MouseFollowLerp = 0
+		else
+			self.MouseFollowLerp = self.MouseFollowLerp - self.MouseFollowLerp * 20 * FrameTime()
+		end
+	end
+
+	local mousePosX, mousePosY = self.MouseX + 16, self.MouseY + 16
+	local screenPosX, screenPosY = ScrW() - self:GetWide(), ScrH() / 2 - self:GetTall() / 2 - 40
+	self:SetPos(Lerp(self.MouseFollowLerp, screenPosX, mousePosX), Lerp(self.MouseFollowLerp, screenPosY, mousePosY))
+end
+
+function PANEL:DetermineFontSize()
+	local size = fontSize:GetInt()
+
+	if size >= 0 then
+		self.FontSize = size
+		return
+	end
+
+	if ScrW() > 3200 then
+		self.FontSize = 2
+	elseif ScrW() > 2200 then
+		self.FontSize = 1
+	else
+		self.FontSize = 0
+	end
+end
+
+function PANEL:DrawColorText(...)
+	local curColor = BASE_COLOR
+	local totalWidth, totalHeight = 0, 0
+	local elems = {}
+	for _, v in ipairs({...}) do
+		if istable(v) then
+			if v.gap then
+				totalWidth = totalWidth + v.gap
+				--table.insert(elems, { text = "", color = curColor, w = v.gap, h = 0 })
+			else
+				curColor = v
+			end
+		else
+			local w, h = surface.GetTextSize(v)
+			totalWidth, totalHeight = totalWidth + w, math.max(totalHeight, h)
+			table.insert(elems, { text = v, color = curColor, w = w, h = h })
+		end
+	end
+
+	local cursor = self.RightAlign and self:GetWide() - totalWidth - 4 or 4
+	for _, elem in ipairs(elems) do
+		surface.SetTextColor(unpack(elem.color))
+		surface.SetTextPos(cursor, self.WorkingHeight)
+		surface.DrawText(elem.text)
+		cursor = cursor + elem.w
+	end
+
+	self.WorkingWidth, self.WorkingHeight = math.max(self.WorkingWidth, totalWidth + 8), self.WorkingHeight + totalHeight
+
+	return totalWidth, totalHeight
+end
+
+function PANEL:GetFont(big)
+	return string.format("WardenEnt%s%s", big and "Big" or "", self.FontSize or 0)
+end
+
+vgui.Register("WardenEntityInfo", PANEL, "DPanel")
 
 hook.Add("InitPostEntity", "WardenEntityInfo", function()
 	if IsValid(Warden.EntityInfo) then
@@ -329,12 +373,10 @@ hook.Add("InitPostEntity", "WardenEntityInfo", function()
 	end
 
 	Warden.EntityInfo = vgui.Create("WardenEntityInfo")
-	hook.Add("Think", "WardenEntityInfo", think)
 end)
 
 -- hotload support for singleplayer
 if game.SinglePlayer() and IsValid(Warden.EntityInfo) then
 	Warden.EntityInfo:Remove()
 	Warden.EntityInfo = vgui.Create("WardenEntityInfo")
-	hook.Add("Think", "WardenEntityInfo", think)
 end

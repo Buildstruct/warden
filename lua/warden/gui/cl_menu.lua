@@ -148,6 +148,7 @@ local function entInfo(panel)
 	panel:CheckBox(Warden.L("Show collision group"), "warden_entinfo_show_cgroup")
 	panel:CheckBox(Warden.L("Show color"), "warden_entinfo_show_color")
 	panel:CheckBox(Warden.L("Show perms"), "warden_entinfo_show_perms")
+	panel:CheckBox(Warden.L("Follow cursor in C menu"), "warden_entinfo_followcursor")
 
 	Warden.AddSpacer(panel)
 
