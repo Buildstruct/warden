@@ -10,17 +10,18 @@ hook.Add("PlayerUse", "Warden", function(ply, ent)
 	end
 end)
 
-hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
-	if not IsValid(ent) then return end
-	if not Warden.GetServerBool("phy_damage", true) and dmg:IsDamageType(DMG_CRUSH) then return true end
+hook.Add("EntityTakeDamage", "Warden", function(ent, dmgInfo)
+	if not ent:IsValid() then return end
+	if not Warden.GetServerBool("phy_damage", true) and dmgInfo:IsDamageType(DMG_CRUSH) then return true end
 
-	local attacker = dmg:GetAttacker()
-	local validAtt = IsValid(attacker)
+	local attacker = dmgInfo:GetAttacker()
+	local validAtt = attacker:IsValid()
 
 	-- sometimes physics damage is attributed to world when it really should not be
-	if not validAtt and dmg:IsDamageType(DMG_CRUSH) then
+	if not validAtt and dmgInfo:IsDamageType(DMG_CRUSH) then
+		local owner = Warden.GetOwner(ent)
 		local perm = Warden.GetPermission(Warden.PERMISSION_DAMAGE, true)
-		if perm and (perm:GetEnabled() or not perm:GetDefault()) then
+		if perm and (perm:GetEnabled() or not perm:GetDefault()) and (not owner:IsValid() or owner:GetInfoNum("warden_world_crush", 0) == 0) then
 			return true
 		end
 	end
@@ -32,13 +33,13 @@ hook.Add("EntityTakeDamage", "Warden", function(ent, dmg)
 			if newAttacker == ent and newAttacker:IsPlayer() and not Warden.GetServerBool("fire_damage", true) then return true end
 
 			attacker = newAttacker
-			dmg:SetAttacker(attacker)
+			dmgInfo:SetAttacker(attacker)
 		end
 	end
 
 	if Warden.CheckPermission(attacker, ent, Warden.PERMISSION_DAMAGE) then return end
 
-	local inflictor = dmg:GetInflictor()
+	local inflictor = dmgInfo:GetInflictor()
 	local infOwnerID = Warden.GetOwnerID(inflictor)
 	if not validAtt and infOwnerID and infOwnerID ~= "World" and Warden.CheckPermission(inflictor, ent, Warden.PERMISSION_DAMAGE) then return end
 

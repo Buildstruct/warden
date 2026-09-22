@@ -1,5 +1,6 @@
 CreateClientConVar("warden_touch_self", 1, true, true, "Whether you can touch your own entities.", 0, 1)
 CreateClientConVar("warden_touch", 1, true, true, "Whether you can touch any entities.", 0, 1)
+CreateClientConVar("warden_world_crush", 0, true, true, "Whether you can take crush damage from the world.", 0, 1)
 local permPersist = CreateClientConVar("warden_perm_persist", 0, true, true, "Allow permissions to persist across sessions.", 0, 1)
 
 if not permPersist:GetBool() then
@@ -49,9 +50,9 @@ end
 
 -- determine whether to grant or revoke based on a bool
 function Warden.PermissionRequest(receiver, val, keyOrID, dontDB)
-	local blockRequest = hook.Run("WardenPermissionRequest", LocalPlayer(), receiver, val, keyOrID) 
-	if blockRequest == true then return end 
-	
+	local blockRequest = hook.Run("WardenPermissionRequest", LocalPlayer(), receiver, val, keyOrID)
+	if blockRequest == true then return end
+
 	if val then
 		Warden.GrantPermission(receiver, keyOrID, dontDB)
 	else

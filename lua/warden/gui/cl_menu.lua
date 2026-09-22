@@ -14,6 +14,7 @@ local function setPerms(panel)
 
 	panel:CheckBox(Warden.L("Let me touch others' entities"), "warden_touch")
 	panel:CheckBox(Warden.L("Let me touch my own entities"), "warden_touch_self")
+	panel:CheckBox(Warden.L("Allow world crush damage"), "warden_world_crush")
 	panel:CheckBox(Warden.L("Save my perms across sessions"), "warden_perm_persist")
 
 	hook.Run("WardenPermsHeader", panel, permChecks)

@@ -292,7 +292,7 @@ function PANEL:DeterminePos()
 		self.RightAlign = nil
 		self.MouseX, self.MouseY = gui.MouseX(), gui.MouseY() -- only setting this here prevents snapping to the top left corner
 
-		if self.MouseFollowLerp > 0.995 then
+		if self.MouseFollowLerp > 0.999 then
 			self.MouseFollowLerp = 1
 		else
 			self.MouseFollowLerp = self.MouseFollowLerp + (1 - self.MouseFollowLerp) * 20 * FrameTime()
@@ -300,7 +300,7 @@ function PANEL:DeterminePos()
 	else
 		self.RightAlign = true
 
-		if self.MouseFollowLerp < 0.005 then
+		if self.MouseFollowLerp < 0.001 then
 			self.MouseFollowLerp = 0
 		else
 			self.MouseFollowLerp = self.MouseFollowLerp - self.MouseFollowLerp * 20 * FrameTime()
