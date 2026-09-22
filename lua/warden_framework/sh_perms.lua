@@ -128,7 +128,6 @@ makeGetSet("BypassTouch", "bypass_touch_", "Bool", false)
 
 -- // default permission definitions // --
 
-Warden.PERMISSION_ALL     = Warden.RegisterPermissionSimple("whitelist", "whitelist", 3)
 Warden.PERMISSION_TOOL    = Warden.RegisterPermissionSimple("tool", "toolgun", 2, nil, "warden/tool.png", "icon16/wand.png")
 Warden.PERMISSION_PHYSGUN = Warden.RegisterPermissionSimple("physgun", "physgun", 1, nil, "warden/physgun.png", "icon16/wrench.png")
 Warden.PERMISSION_GRAVGUN = Warden.RegisterPermissionSimple("gravgun", "gravgun", 1, true, "warden/gravgun.png", "icon16/wrench_orange.png")
@@ -167,11 +166,6 @@ function Warden.GetPermission(keyOrID, force)
 end
 
 Warden.GetPerm = Warden.GetPermission
-
-hook.Add("WardenPreCheckPermission", "WardenWhitelist", function(receiver, granter, perm, receiverOwner, granterOwner, validRec, validGra)
-	if perm.ID == Warden.PERMISSION_ALL then return end
-	if Warden._CheckPerm(receiver, granter, Warden.Permissions[Warden.PERMISSION_ALL], receiverOwner, granterOwner, validRec, validGra) then return true end
-end)
 
 local pCache = {}
 local pAllCache = {}
@@ -261,13 +255,6 @@ function Warden.HasPermissionGlobal(ent, keyOrID)
 
 	return state
 end
-
-hook.Add("WardenGetAllPerms", "WardenWhitelist", function(receiver, granter)
-	local globalPerm = Warden.Permissions[Warden.PERMISSION_ALL]
-	if globalPerm:GetEnabled() and Warden.CheckPermission(receiver, granter, globalPerm) then
-		return { [Warden.PERMISSION_ALL] = globalPerm }
-	end
-end)
 
 -- get every perm or every perm for a specific pair of ents
 function Warden.GetAllPermissions(receiver, granter)
