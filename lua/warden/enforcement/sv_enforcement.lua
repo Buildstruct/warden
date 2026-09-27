@@ -21,7 +21,7 @@ hook.Add("EntityTakeDamage", "Warden", function(ent, dmgInfo)
 	if not validAtt and dmgInfo:IsDamageType(DMG_CRUSH) then
 		local owner = Warden.GetOwner(ent)
 		local perm = Warden.GetPermission(Warden.PERMISSION_DAMAGE, true)
-		if perm and (perm:GetEnabled() or not perm:GetDefault()) and (not owner:IsValid() or owner:GetInfoNum("warden_world_crush", 0) == 0) then
+		if perm and (perm:GetEnabled() or not perm:GetDefault()) and (not IsValid(owner) or owner:GetInfoNum("warden_world_crush", 0) == 0) then
 			return true
 		end
 	end
